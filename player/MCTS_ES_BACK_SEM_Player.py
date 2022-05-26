@@ -33,6 +33,9 @@ class MCTS_ES_BACK_SEM_Player(Player):
         self.ESType = ESType
         self.Sem_L = Sem_L
         self.Sem_U = Sem_U
+        self.latest_root_node = None #added
+        self.nodes_dict = {} #added
+        self.id_count = 0 #added
         #print("EAMCTS called, ESType:", str(self.ESType))
         
         self.fullName = f'MCTS (Time Limit = {self.timeLimit})' if self.isTimeLimited else  f'MCTS (Iterations = {self.iterations})'
@@ -76,6 +79,9 @@ class MCTS_ES_BACK_SEM_Player(Player):
         """
         # Player 1 = 1, Player 2 = 2 (Player 2 wants to the game to be a loss)
         playerSymbol = root_state.playerSymbol
+        self.latest_root_node = None #added
+        self.nodes_dict = {} #added
+        self.id_count = 0 #added
         
         # state the Root Node
         root_node = Node(state = root_state)
@@ -152,7 +158,9 @@ class MCTS_ES_BACK_SEM_Player(Player):
         if node.untried_moves != [] and (not state.isGameOver):  # if we can expand, i.e. state/node is non-terminal
             move_random = random.choice(node.untried_moves)
             state.move(move_random.move)
-            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver)
+            self.id_count = self.id_count + 1 #added
+            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver,child_id = self.id_count) #mod
+            self.nodes_dict[self.id_count] = node #added
         return node
     
     def Rollout(self, node, state):
@@ -182,11 +190,12 @@ class Node:
     A node in the search tree
     """
     
-    def __init__(self, Move = None, parent = None, state = None, isGameOver = False):
+    def __init__(self, Move = None, parent = None, state = None, isGameOver = False, id = 0):#mod
         self.Move = Move  # the move that got us to this node - "None" for the root
         self.parent = parent  # parent node of this node - "None" for the root node
         self.child = []  # list of child nodes
         self.state = state
+        self.id = id #added
         self.untried_moves = state.availableMoves()
         self.playerSymbol = state.playerSymbol
         # keep track of visits/wins/losses
@@ -215,12 +224,12 @@ class Node:
         
         return String
     
-    def AddChild(self, move, state, isGameOver):
+    def AddChild(self, move, state, isGameOver, child_id):#mod
         """
         Add new child node for this move remove m from list of untried_moves.
         Return the added child node.
         """
-        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self)
+        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self, id = child_id) #mod
         self.untried_moves.remove(move)  # this move is now not available
         self.child.append(node)
         return node
