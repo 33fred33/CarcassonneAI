@@ -9,7 +9,7 @@ class MCTSPlayer(Player):
     # Player 1 selects the optimal UCT move 
     # Player 2 selects the worst move from Player 1's position
     
-    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 1, logs=False, logfile=None, name='MCTS_V'):
+    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 1, logs=False, logfile=None, name='MCTS_V', detailed_logs=True):
         super().__init__()
         self.iterations = iterations
         self.timeLimit = timeLimit
@@ -20,6 +20,10 @@ class MCTSPlayer(Player):
         self.family = "MCTS"
         self.logs = logs
         self.logfile = logfile
+        self.latest_root_node = None #added
+        self.nodes_dict = {} #added
+        self.id_count = 0 #added
+        self.detailed_logs = detailed_logs
         if self.logs:
             self.cols = ['Name','Simulations','Turn','TimeTaken']
             self.file = self.CreateFile(self.cols, 'Stats')
@@ -27,7 +31,7 @@ class MCTSPlayer(Player):
         
     def ClonePlayer(self):
         Clone = MCTSPlayer(iterations=self.iterations, timeLimit=self.timeLimit, isTimeLimited = self.isTimeLimited, 
-                           c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name)
+                           c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name, detailed_logs=self.detailed_logs)
         return Clone
     
     
@@ -47,6 +51,9 @@ class MCTSPlayer(Player):
         """
         # Player 1 = 1, Player 2 = 2 (Player 2 wants to the game to be a loss)
         playerSymbol = root_state.playerSymbol
+        self.latest_root_node = None #added
+        self.nodes_dict = {} #added
+        self.id_count = 0 #added
         
         # state the Root Node
         root_node = Node(state = root_state)
@@ -60,6 +67,8 @@ class MCTSPlayer(Player):
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[-1].Move
         else:
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[0].Move
+        
+        self.latest_root_node=root_node
         return bestMove.move
     
     
@@ -88,7 +97,7 @@ class MCTSPlayer(Player):
         if (root_state.Turn % 10 == 0):
             print(f'({self.name})   TimeTaken: {round(endTime - startTime,3)} secs  -  Turn: {root_state.Turn}  -  Time:{time.strftime("%H:%M:%S", time.localtime())}')
         # append info to csv
-        if self.logs:
+        if self.logs:  #ADD TREE STRUCTURE LOGS
             data = {'Name': self.name,'Simulations':self.iterations,'Turn':int((root_state.Turn+1)/2), 'TimeTaken':(endTime - startTime)}
             self.UpdateFile(data)
     
@@ -107,7 +116,11 @@ class MCTSPlayer(Player):
         if node.untried_moves != [] and (not state.isGameOver):  # if we can expand, i.e. state/node is non-terminal
             move_random = random.choice(node.untried_moves)
             state.move(move_random.move)
-            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver)
+            self.id_count = self.id_count + 1 #added
+            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver,child_id = self.id_count) #mod
+            self.nodes_dict[self.id_count] = node #added
+            
+            
         return node
     
     def Rollout(self, node, state):
@@ -165,11 +178,12 @@ class Node:
     A node in the search tree
     """
     
-    def __init__(self, Move = None, parent = None, state = None, isGameOver = False):
+    def __init__(self, Move = None, parent = None, state = None, isGameOver = False, id = 0):#mod
         self.Move = Move  # the move that got us to this node - "None" for the root
         self.parent = parent  # parent node of this node - "None" for the root node
         self.child = []  # list of child nodes
         self.state = state
+        self.id = id #added
         self.untried_moves = state.availableMoves()
         self.playerSymbol = state.playerSymbol
         # keep track of visits/wins/losses
@@ -193,12 +207,12 @@ class Node:
         
         return String
     
-    def AddChild(self, move, state, isGameOver):
+    def AddChild(self, move, state, isGameOver, child_id):#mod
         """
         Add new child node for this move remove m from list of untried_moves.
         Return the added child node.
         """
-        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self)
+        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self, id = child_id)#mod
         self.untried_moves.remove(move)  # this move is now not available
         self.child.append(node)
         return node
