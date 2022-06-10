@@ -1,4 +1,4 @@
-import random as rd
+import random
 import itertools as it
 from scipy.stats import bernoulli
 import numpy as np
@@ -14,12 +14,12 @@ class FunctionOptimisationState:
       self.isGameOver
    """
     
-   def __init__(self, players, function, ranges, splits, minimum_step=0.00001, max_turns=np.inf):
+   def __init__(self, players, function, ranges, splits, minimum_step=0.00001, max_turns=np.inf, split_sequence=None):
       """
       players: list of player objects (min len: 1, max len: 2)
       function: fitness method (takes a list of len="dimensions" as argument)
       ranges: list (dimensions; min len: 1, max len: any) of lists (min and max; len: 2) of domains.
-      splitss: (int) equal split amount
+      splits: (int) equal split amount
       """
       # assignation
       self.players = players
@@ -34,7 +34,7 @@ class FunctionOptimisationState:
       self.result = None
       self.playerSymbol = 1
       self.isGameOver = False
-      self.Turn = 0
+      self.Turn = 1
     
    def CloneState(self):
         """
@@ -75,6 +75,8 @@ class FunctionOptimisationState:
       self.Turn += 1  # increment turns
 
    def availableMoves(self):
+      if self.ranges[0][1] - self.ranges[0][0] < self.minimum_step or self.Turn > self.max_turns:
+         return []
       available_ranges = []
       for r in self.ranges:
          dimension_ranges = []
@@ -98,7 +100,7 @@ class FunctionOptimisationState:
         Returns a random move from all possible moves
         """
         availableMoves = self.availableMoves()
-        return rd.choice(availableMoves)
+        return random.choice(availableMoves)
     
    def shuffle(self): #DUMMY. Called by MCTS agents
       pass

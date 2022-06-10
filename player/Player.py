@@ -99,9 +99,11 @@ class Player:
         """
         if self.logs:
             df = pd.read_csv(self.file)  # read in file
-            df = df.append(data, ignore_index = True)  # new data
-            df.to_csv(self.file, index=False)  # export
-        
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            #df.to_csv(self.file, index=False)  # export
+            new_df.to_csv(self.file, index=False)  # export
         
     def UpdateESFile(self, data):
         """
@@ -109,8 +111,11 @@ class Player:
         """
         if self.logs:
             df = pd.read_csv(self.ES_file)  # read in file
-            df = df.append(data, ignore_index = True)  # new data
-            df.to_csv(self.ES_file, index=False)  # export
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            #df.to_csv(self.ES_file, index=False)  # export
+            new_df.to_csv(self.ES_file, index=False)  # export
     
     
     def UpdateEVOFile(self, data):
@@ -119,9 +124,11 @@ class Player:
         """
         if self.logs:
             df = pd.read_csv(self.EVO_file)  # read in file
-            df = df.append(data, ignore_index = True)  # new data
-            df.to_csv(self.EVO_file, index=False)  # export
-        
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            #df.to_csv(self.EVO_file, index=False)  # export
+            new_df.to_csv(self.EVO_file, index=False)  # export
         
     def UpdateSEMFile(self, data):
         """
@@ -129,8 +136,11 @@ class Player:
         """
         if self.logs:
             df = pd.read_csv(self.SEM_file)  # read in file
-            df = df.append(data, ignore_index = True)  # new data
-            df.to_csv(self.SEM_file, index=False)  # export
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            #df.to_csv(self.SEM_file, index=False)  # export
+            new_df.to_csv(self.SEM_file, index=False)
         
         
             

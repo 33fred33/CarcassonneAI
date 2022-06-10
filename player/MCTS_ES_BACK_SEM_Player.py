@@ -80,11 +80,11 @@ class MCTS_ES_BACK_SEM_Player(Player):
         # Player 1 = 1, Player 2 = 2 (Player 2 wants to the game to be a loss)
         playerSymbol = root_state.playerSymbol
         self.latest_root_node = None #added
-        self.nodes_dict = {} #added
-        self.id_count = 0 #added
         
         # state the Root Node
         root_node = Node(state = root_state)
+        self.nodes_dict = {0:root_node} #added
+        self.id_count = 0 #added
         #startTime = time.time()
         
         if self.isTimeLimited:
@@ -97,7 +97,7 @@ class MCTS_ES_BACK_SEM_Player(Player):
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[-1].Move
         else:
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[0].Move
-        
+        self.latest_root_node=root_node #added
         return bestMove.move
     
     
@@ -118,7 +118,7 @@ class MCTS_ES_BACK_SEM_Player(Player):
             node = root_node
             state = root_state.CloneState()
             # 4 steps
-            node = self.Select(node, state, root_state)
+            node = self.Select(node, state, root_state) #why??
             node = self.Expand(node, state)
             self.Rollout(node, state)
             self.Backpropogate(node, state)
@@ -145,7 +145,7 @@ class MCTS_ES_BACK_SEM_Player(Player):
         while node.untried_moves == [] and node.child != []:  # node is fully expanded
             if not self.hasGPTree:
                 # GP search
-                if root_state.Turn >= 1:
+                if root_state.Turn >= 1: ##errooooor
                     # get the GPTree of this turn
                     self.GPTree = ES_Search(node, self)
                     self.hasGPTree = True

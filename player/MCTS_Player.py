@@ -28,7 +28,9 @@ class MCTSPlayer(Player):
             self.cols = ['Name','Simulations','Turn','TimeTaken']
             self.file = self.CreateFile(self.cols, 'Stats')
         
-        
+    def test_seed(self):
+        print(random.randint(0,99999))
+                
     def ClonePlayer(self):
         Clone = MCTSPlayer(iterations=self.iterations, timeLimit=self.timeLimit, isTimeLimited = self.isTimeLimited, 
                            c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name, detailed_logs=self.detailed_logs)
@@ -52,11 +54,11 @@ class MCTSPlayer(Player):
         # Player 1 = 1, Player 2 = 2 (Player 2 wants to the game to be a loss)
         playerSymbol = root_state.playerSymbol
         self.latest_root_node = None #added
-        self.nodes_dict = {} #added
-        self.id_count = 0 #added
         
         # state the Root Node
         root_node = Node(state = root_state)
+        self.nodes_dict = {0:root_node} #added
+        self.id_count = 0 #added
         if self.isTimeLimited:
             self.MCTS_TimeLimit(root_node, root_state)
         else:

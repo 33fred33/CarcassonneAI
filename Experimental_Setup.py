@@ -127,10 +127,6 @@ def RunLeague_ES(randomSeed, players, gamesPerMatch, logs, logfile, game_name = 
         CombineFiles(logs, logfile)
         CreateStatsFiles(logfile, game_name)
 
-
-
-
-
 def RunLeague(randomSeed, players, gamesPerMatch, logs, logfile, game_name = "Carcassonne"): #mod
     
     print(f'\n\n\nRandom Seed: {randomSeed}\n')
@@ -230,12 +226,9 @@ def RunLeague(randomSeed, players, gamesPerMatch, logs, logfile, game_name = "Ca
         CombineFiles(logs, logfile)
         CreateStatsFiles(logfile, game_name)
     
-
 def PlayFullMatchMultiWrapper(args):
     PlayFullMatch(*args)
-
-
-    
+  
 def Fixtures(players):
     """
     Returns a round robin fixture with "home-and-away" results
@@ -261,10 +254,6 @@ def Fixtures(players):
     
     return fixtures
   
-
-    
-
-
 def PlayFullMatch(player1, player2, gamesPerMatch, fixtureSetNumber, fixtureMatchNumber, randomSeed, logs, logfile, game_name, showLogs=False): #mod
     """
     Play a full set of games between two players
@@ -311,9 +300,6 @@ def PlayFullMatch(player1, player2, gamesPerMatch, fixtureSetNumber, fixtureMatc
     if showLogs:
         print(f'Games:{gamesPerMatch} - Player1 Wins:{winners[0]}    Player2 Wins:{winners[1]}    Draws:{winners[2]}')
 
-
-
-    
 def CombineFiles(logs, logfile):
     """
     Group the individual files and combine them into one file
@@ -340,22 +326,19 @@ def CombineFiles(logs, logfile):
             continue
         first = True
         
-        for file in group:
+        for j,file in enumerate(group):
             if first:
                 df = pd.read_csv(os.path.join('logs', logfile, file))
+                df["run"] = [j for _ in range(len(df))]
                 first = False
             else:
                 dfNew = pd.read_csv(os.path.join('logs', logfile, file))
-                df = df.append(dfNew)
+                dfNew["run"] = [j for _ in range(len(dfNew))]
+                #df = df.append(dfNew)
+                df = pd.concat([df,dfNew])  # new data
         
         df.to_csv(os.path.join('logs', logfile, fileNames[i] + '.csv'), index=False)
         i += 1
-
-
-    
-
-
-    
 
 def PlayOneGame(player1, player2, gameNumber, fixtureSetNumber, randomSeed, dfStats, logs, logfile, game_name, showLogs=False): #mod
     """
@@ -444,8 +427,6 @@ def PlayOneGame(player1, player2, gameNumber, fixtureSetNumber, randomSeed, dfSt
     # return results of game
     return winner, result, timeTaken, dfStats
 
-
-
 def UpdateStatsTable(player1, player2, gameNumber, fixtureSetNumber, randomSeed, dfStats, finalScore, winner, 
                      FeatureScores, times, numberMeeples, meepleTurn, meepleFeature, turns):
     """
@@ -476,8 +457,6 @@ def UpdateStatsTable(player1, player2, gameNumber, fixtureSetNumber, randomSeed,
     dfStats = dfStats.append(p2_data)  # add new data to table
     
     return dfStats
-
-
 
 def CreateNewStatsFile(logfile):
     """
@@ -515,10 +494,6 @@ def CreateNewStatsFile(logfile):
     # create new file
     dfStats.to_csv(new_file, index=False) 
     return new_file, dfStats
-
-
-
-
 
 def UpdateLeagueTable(player1, player2, gamesPerMatch, winners, results, logs, logfile):
     """
@@ -584,8 +559,6 @@ def UpdateLeagueTable(player1, player2, gamesPerMatch, winners, results, logs, l
         # export the updated table
         df_league.to_csv(os.path.join('logs', logfile, 'FinalLeagueTable.csv'), index=False)
 
-
-
 def updateGamesCompletedFile(logfile):
     done = False
     # wait
@@ -606,9 +579,6 @@ def updateGamesCompletedFile(logfile):
     completed = df_Games['Games_Completed'].tolist()[0]    
     total = df_Games['Total_Games'].tolist()[0]
     print(f'\n  #####   #####   Games Completed: {completed}/{total}  ({round(100 * completed /total, 2)} %)  #####   #####   \n')
-
-
-
 
 def CreateStatsFiles(logfile, game_name = "Carcassonne"): #mod
     """
@@ -816,9 +786,6 @@ def CreateStatsFiles(logfile, game_name = "Carcassonne"): #mod
     
     print('Finished Creating Final Stats Files')
     
-        
-
-
 def PandasConditions(df, full=False):
     if full:
         return [(df['Feature'].str.contains("CompleteCityScore")),
@@ -836,7 +803,6 @@ def PandasConditions(df, full=False):
                 (df['Feature'].str.contains("Farm")),
                 (df['Feature'].str.contains("Total"))]
 
-
 def PandasConditionsMeeple(df):
     return [(df['Feature'] == 'C'),
             (df['Feature'] == 'G'),
@@ -845,8 +811,3 @@ def PandasConditionsMeeple(df):
             (df['Feature'] == 'Total'),
             ]
 
-
-
-
-
-    
