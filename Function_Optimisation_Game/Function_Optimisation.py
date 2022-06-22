@@ -3,6 +3,7 @@ import itertools as it
 from scipy.stats import bernoulli
 import numpy as np
 import itertools
+import math
             
 class FunctionOptimisationState:
    """
@@ -17,13 +18,34 @@ class FunctionOptimisationState:
    def __init__(self, players, function, ranges, splits, minimum_step=0.00001, max_turns=np.inf, split_sequence=None):
       """
       players: list of player objects (min len: 1, max len: 2)
-      function: fitness method (takes a list of len="dimensions" as argument)
+      function: fitness method (takes a list of len="dimensions" as argument). If is an int, default functions will be used
       ranges: list (dimensions; min len: 1, max len: any) of lists (min and max; len: 2) of domains.
       splits: (int) equal split amount
       """
       # assignation
       self.players = players
       self.function = function
+      if isinstance(self.function, int):
+         def f0(x):
+            """Unimodal, centered"""
+            return math.sin(math.pi*x[0])
+         def f1(x):
+            """Multimodal, paper bubeck"""
+            return 1/2*math.sin(13*x[0])*math.sin(27*x[0])+1
+         def f2(x):
+            """Smoothness with levels, paper finnsson"""
+            if x[0] < 0.5:
+               return 0.5+0.5*abs(math.sin(1/pow(x[0],5)))
+            else:
+               return 7/20+0.5*abs(math.sin(1/pow(x[0],5)))
+         def f3(x):
+            """Deceptive"""
+            return (0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),4)
+         def f4(x):
+            """Deceptive, search traps"""
+            return (0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80)
+         self.function_list=[f0,f1,f2,f3,f4]
+         self.function = self.function_list[function]
       self.ranges = ranges
       self.splits = splits
       self.minimum_step = minimum_step
