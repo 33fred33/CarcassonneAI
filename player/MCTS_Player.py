@@ -9,7 +9,7 @@ class MCTSPlayer(Player):
     # Player 1 selects the optimal UCT move 
     # Player 2 selects the worst move from Player 1's position
     
-    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 1, logs=False, logfile=None, name='MCTS_V', detailed_logs=True):
+    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 1, logs=False, logfile=None, name='MCTS_V', rollouts = 1):
         super().__init__()
         self.iterations = iterations
         self.timeLimit = timeLimit
@@ -20,20 +20,25 @@ class MCTSPlayer(Player):
         self.family = "MCTS"
         self.logs = logs
         self.logfile = logfile
+        assert rollouts >= 1, "Rollouts is wrongly assigned. Must be >= 1"
+        self.rollouts = rollouts
+
         self.latest_root_node = None #added
         self.nodes_dict = {} #added
         self.id_count = 0 #added
-        self.detailed_logs = detailed_logs
         if self.logs:
             self.cols = ['Name','Simulations','Turn','TimeTaken']
             self.file = self.CreateFile(self.cols, 'Stats')
+
+            self.metric_cols = ["Iteration","Backpropagation_depth","Reward","Discrepancy","UN_Visits","UN_Reward",""]
+            self.metric_file = self.CreateFile(self.cols, 'Metrics')
         
     def test_seed(self):
         print(random.randint(0,99999))
                 
     def ClonePlayer(self):
         Clone = MCTSPlayer(iterations=self.iterations, timeLimit=self.timeLimit, isTimeLimited = self.isTimeLimited, 
-                           c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name, detailed_logs=self.detailed_logs)
+                           c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name, rollouts = self.rollouts)
         return Clone
     
     
@@ -60,6 +65,7 @@ class MCTSPlayer(Player):
         self.nodes_dict = {0:root_node} #added
         self.id_count = 0 #added
         if self.isTimeLimited:
+            print("Time limit?")
             self.MCTS_TimeLimit(root_node, root_state)
         else:
             self.MCTS_IterationLimit(root_node, root_state)
@@ -82,8 +88,8 @@ class MCTSPlayer(Player):
         state = root_state.CloneState()
         
         # first simulation
-        self.Rollout(root_node, state)
-        self.Backpropogate(root_node, state)
+        reward = self.Rollout(root_node, state)
+        self.Backpropogate(root_node, reward)
         
         # iterate for each simulation
         for i in range(self.iterations-1):
@@ -92,8 +98,8 @@ class MCTSPlayer(Player):
             # 4 steps
             node = self.Select(node, state)
             node = self.Expand(node, state)
-            self.Rollout(node, state)
-            self.Backpropogate(node, state)
+            reward = self.Rollout(node, state)
+            self.Backpropogate(node, reward)
             
         endTime = time.time()
         if (root_state.Turn % 10 == 0):
@@ -128,15 +134,20 @@ class MCTSPlayer(Player):
     def Rollout(self, node, state):
         # Rollout - play random moves until the game reaches a terminal state
         state.shuffle()  # shuffle deck
-        while not state.isGameOver:
-            m = state.getRandomMove()
-            state.move(m.move)
-              
-    def Backpropogate(self, node, state):
+        results = [None for _ in range(self.rollouts)]
+        for i in range(self.rollouts):
+            temp_state = state.CloneState()
+            while not temp_state.isGameOver:
+                m = temp_state.getRandomMove()
+                temp_state.move(m.move)
+            results[i] = temp_state.checkWinner()
+            reward = sum(results)/self.rollouts
+        return reward
+
+    def Backpropogate(self, node, reward):
         # Backpropogate
-        result = state.checkWinner()
         while node != None:  # backpropogate from the expected node and work back until reaches root_node
-            node.UpdateNode(result, self.c_param)
+            node.UpdateNode(reward, self.c_param)
             node = node.parent
     
     
@@ -193,7 +204,7 @@ class Node:
         self.wins = 0
         self.losses = 0
         self.draws = 0
-        self.Q = 0
+        self.Q = 0 #Average reward
 
         
     
@@ -251,10 +262,10 @@ class Node:
         """
         if self.playerSymbol == 1:
             #  look for maximum output
-            choice_weights = [c.Q + (2 * c_param * np.sqrt(2 * np.log(self.visits) / c.visits)) for c in self.child]
+            choice_weights = [c.Q + (c_param * np.sqrt(2 * np.log(self.visits) / c.visits)) for c in self.child]
             return self.child[np.argmax(choice_weights)]
         else: 
             #  look for minimum output
-            choice_weights = [c.Q - (2 * c_param * np.sqrt(2 * np.log(self.visits) / c.visits)) for c in self.child]
+            choice_weights = [c.Q - (c_param * np.sqrt(2 * np.log(self.visits) / c.visits)) for c in self.child]
             return self.child[np.argmin(choice_weights)]
 

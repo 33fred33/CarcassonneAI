@@ -26,7 +26,7 @@ class Player:
         self.opponent = None
         
         # switch
-        Player.isFirstPlayer = not Player.isFirstPlayer
+        Player.isFirstPlayer = not Player.isFirstPlayer #lol wrong
         
     
     def chooseAction(self):
@@ -142,8 +142,22 @@ class Player:
             #df.to_csv(self.SEM_file, index=False)  # export
             new_df.to_csv(self.SEM_file, index=False)
         
-        
+    def UpdateTreeFile(self, data):
+        if self.logs:
+            df = pd.read_csv(self.Tree_file)  # read in file
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            new_df.to_csv(self.Tree_file, index=False)
             
+    def UpdateMetricsFile(self, data):
+        if self.logs:
+            df = pd.read_csv(self.Tree_file)  # read in file
+            #df = df.append(data, ignore_index = True)  # new data
+            data =  {k:[v] for k,v in data.items()}
+            new_df = pd.concat([df,pd.DataFrame(data)])  # new data
+            new_df.to_csv(self.Tree_file, index=False)
+
 class HumanPlayer(Player):
     
     def __init__(self, name = 'Human'):
