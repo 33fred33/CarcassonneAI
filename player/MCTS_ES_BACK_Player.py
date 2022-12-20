@@ -31,6 +31,10 @@ class MCTS_ES_BACK_Player(Player):
         self.NGen = NGen
         self.ES_Sims = ES_Sims
         self.ESType = ESType
+
+        self.latest_root_node = None #added
+        self.nodes_dict = {} #added
+        self.id_count = 0 #added
         
         self.fullName = f'MCTS (Time Limit = {self.timeLimit})' if self.isTimeLimited else  f'MCTS (Iterations = {self.iterations})'
         self.family = "ES_MCTS"
@@ -45,7 +49,7 @@ class MCTS_ES_BACK_Player(Player):
             self.EVO_cols = ['Name','Turn','IsDifferent','Function','NumberNodes', 'Depth']
             self.EVO_file = self.CreateFile(self.EVO_cols, 'EvoUCT')
             
-            self.ES_cols = ['Name','Turn','Generation','Lambda','TotalNodes','AverageNodes','AverageDepth','AverageSSD']
+            self.ES_cols = ['Name','Turn','Generation','Lambda','TotalNodes','AverageNodes','AverageDepth','AverageSSD','IsFirstPlayer','Opponent']
             self.ES_file = self.CreateFile(self.ES_cols, 'EvoStr')
         
         
@@ -70,9 +74,12 @@ class MCTS_ES_BACK_Player(Player):
         """
         # Player 1 = 1, Player 2 = 2 (Player 2 wants to the game to be a loss)
         playerSymbol = root_state.playerSymbol
+        self.latest_root_node = None #added
         
         # state the Root Node
         root_node = Node(state = root_state)
+        self.nodes_dict = {0:root_node} #added
+        self.id_count = 0 #added
         #startTime = time.time()
         
         if self.isTimeLimited:
@@ -85,7 +92,7 @@ class MCTS_ES_BACK_Player(Player):
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[-1].Move
         else:
             bestMove = sorted(root_node.child, key = lambda c: c.Q)[0].Move
-        
+        self.latest_root_node=root_node #added
         return bestMove.move
     
     
@@ -146,7 +153,9 @@ class MCTS_ES_BACK_Player(Player):
         if node.untried_moves != [] and (not state.isGameOver):  # if we can expand, i.e. state/node is non-terminal
             move_random = random.choice(node.untried_moves)
             state.move(move_random.move)
-            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver)
+            self.id_count = self.id_count + 1 #added
+            node = node.AddChild(move = move_random, state = state, isGameOver = state.isGameOver,child_id = self.id_count)
+            self.nodes_dict[self.id_count] = node #added
         return node
     
     def Rollout(self, node, state):
@@ -176,11 +185,12 @@ class Node:
     A node in the search tree
     """
     
-    def __init__(self, Move = None, parent = None, state = None, isGameOver = False):
+    def __init__(self, Move = None, parent = None, state = None, isGameOver = False, id=0):
         self.Move = Move  # the move that got us to this node - "None" for the root
         self.parent = parent  # parent node of this node - "None" for the root node
         self.child = []  # list of child nodes
         self.state = state
+        self.id = id #added
         self.untried_moves = state.availableMoves()
         self.playerSymbol = state.playerSymbol
         # keep track of visits/wins/losses
@@ -209,12 +219,12 @@ class Node:
         
         return String
     
-    def AddChild(self, move, state, isGameOver):
+    def AddChild(self, move, state, isGameOver, child_id):
         """
         Add new child node for this move remove m from list of untried_moves.
         Return the added child node.
         """
-        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self)
+        node = Node(Move = move, state = state, isGameOver = isGameOver, parent = self, id = child_id)
         self.untried_moves.remove(move)  # this move is now not available
         self.child.append(node)
         return node
@@ -531,7 +541,8 @@ def selBestCustom(individuals, MCTS_Player, generation, turn, fit_attr="fitness"
     
     # append data to csv
     data = {'Name': MCTS_Player.name, 'Turn':int((turn+1)/2), 'Generation':generation, 'Lambda':MCTS_Player.Lambda, 
-            'TotalNodes': Nodes, 'AverageNodes':Nodes/numInd, 'AverageDepth': TotalDepth/(numInd), 'AverageSSD':SSD/(MCTS_Player.Lambda)}
+            'TotalNodes': Nodes, 'AverageNodes':Nodes/numInd, 'AverageDepth': TotalDepth/(numInd), 'AverageSSD':SSD/(MCTS_Player.Lambda),
+            'IsFirstPlayer':MCTS_Player.isFirstPlayer,'Opponent':MCTS_Player.opponent}
     MCTS_Player.UpdateESFile(data) 
     
     if MCTS_Player.ESType == "comma":

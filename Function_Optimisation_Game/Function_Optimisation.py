@@ -31,7 +31,7 @@ class FunctionOptimisationState:
             return math.sin(math.pi*x[0])
          def f1(x):
             """Multimodal, paper bubeck"""
-            return 1/2*math.sin(13*x[0])*math.sin(27*x[0])+1
+            return 1/2*(math.sin(13*x[0])*math.sin(27*x[0])+1)
          def f2(x):
             """Smoothness with levels, paper finnsson"""
             if x[0] < 0.5:
@@ -44,7 +44,10 @@ class FunctionOptimisationState:
          def f4(x):
             """Deceptive, search traps"""
             return (0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80)
-         self.function_list=[f0,f1,f2,f3,f4]
+         def f5(x):
+            """Two variables: smooth"""
+            return x[0] + x[1]
+         self.function_list=[f0,f1,f2,f3,f4,f5]
          self.function = self.function_list[function]
       self.ranges = ranges
       self.splits = splits
@@ -127,6 +130,10 @@ class FunctionOptimisationState:
    def shuffle(self): #DUMMY. Called by MCTS agents
       pass
     
+   def featureVector(self):
+      """Features: turn, player turn, ranges0, ranges1"""
+      return [self.Turn, self.playerSymbol, self.ranges[0][0], self.ranges[0][1]]
+
    def __repr__(self):
       return str(self.ranges)
 

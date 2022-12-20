@@ -20,7 +20,7 @@ class MCTS_ES_BACK_SEM_Player(Player):
     
     # MCTS with ES and backpropogation and semantics
     
-    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 3, logs=False, logfile=None, name='ES_B_S_MCTS', Lambda=4, NGen=20, ES_Sims=30, ESType = "plus",Sem_L=5, Sem_U=10):
+    def __init__(self, iterations = 500, timeLimit = 10, isTimeLimited = False, c_param = 3, logs=False, logfile=None, name='ES_B_S_MCTS', Lambda=4, NGen=20, ES_Sims=30, ESType = "plus",Sem_L=5, Sem_U=10, rollouts = 1):
         super().__init__()
         self.iterations = iterations
         self.timeLimit = timeLimit
@@ -33,6 +33,9 @@ class MCTS_ES_BACK_SEM_Player(Player):
         self.ESType = ESType
         self.Sem_L = Sem_L
         self.Sem_U = Sem_U
+        assert rollouts >= 1, "Rollouts must be over 1"
+        self.rollouts = 1
+
         self.latest_root_node = None #added
         self.nodes_dict = {} #added
         self.id_count = 0 #added
@@ -60,7 +63,7 @@ class MCTS_ES_BACK_SEM_Player(Player):
     def ClonePlayer(self):
         Clone = MCTS_ES_BACK_SEM_Player(iterations=self.iterations, timeLimit=self.timeLimit, isTimeLimited = self.isTimeLimited, 
                                c_param=self.c_param, logs=self.logs, logfile=self.logfile, name=self.name, Lambda=self.Lambda, NGen=self.NGen, ES_Sims=self.ES_Sims
-                               , ESType = self.ESType, Sem_L=self.Sem_L, Sem_U = self.Sem_U)
+                               , ESType = self.ESType, Sem_L=self.Sem_L, Sem_U = self.Sem_U, rollouts = self.rollouts)
         return Clone
     
     
@@ -110,8 +113,8 @@ class MCTS_ES_BACK_SEM_Player(Player):
         state = root_state.CloneState()
         
         # first simulation
-        self.Rollout(root_node, state)
-        self.Backpropogate(root_node, state)
+        reward = self.Rollout(root_node, state)
+        self.Backpropogate(root_node, reward)
         
         # iterate for each simulation
         for i in range(self.iterations-1):
@@ -120,8 +123,8 @@ class MCTS_ES_BACK_SEM_Player(Player):
             # 4 steps
             node = self.Select(node, state, root_state) #why??
             node = self.Expand(node, state)
-            self.Rollout(node, state)
-            self.Backpropogate(node, state)
+            reward = self.Rollout(node, state)
+            self.Backpropogate(node, reward)
             
         # latest time
         endTime = time.time()
@@ -165,16 +168,20 @@ class MCTS_ES_BACK_SEM_Player(Player):
     
     def Rollout(self, node, state):
         # Rollout - play random moves until the game reaches a terminal state
-        state.shuffle()
-        while not state.isGameOver:
-            m = state.getRandomMove()
-            state.move(m.move)
-              
-    def Backpropogate(self, node, state):
+        state.shuffle()  # shuffle deck
+        results = [None for _ in range(self.rollouts)]
+        for i in range(self.rollouts):
+            temp_state = state.CloneState()
+            while not temp_state.isGameOver:
+                m = temp_state.getRandomMove()
+                temp_state.move(m.move)
+            results[i] = temp_state.checkWinner()
+        return sum(results)/self.rollouts
+
+    def Backpropogate(self, node, reward):
         # Backpropogate
-        result = state.checkWinner()
         while node != None:  # backpropogate from the expected node and work back until reaches root_node
-            node.UpdateNode(result, self.c_param)
+            node.UpdateNode(reward, self.c_param)
             node = node.parent
             
 ##############################################################################
@@ -261,7 +268,7 @@ class Node:
     
     def Search(self, MCTS_Player):
         """
-        For the first half of the game use the UCB1 formula.
+        For the first half of the game use the UCB1 formula. #not true
         Else, use GP to find an alternative to UCT 
         """
         # initialize
@@ -342,7 +349,7 @@ def ES_Search(RootNode, MCTS_Player):
     #pset.addPrimitive(operator.neg, 1)
 
     # rename the arguments
-    pset.addTerminal(randomC(), name='c')
+    pset.addTerminal(randomC(), name='c') #this could be wrong
     pset.addTerminal(2)
     pset.renameArguments(ARG0='Q')
     pset.renameArguments(ARG1='n')
@@ -442,7 +449,7 @@ def ES_Search(RootNode, MCTS_Player):
         if playerSymbol == 1:
             return RootNode.child[np.argmax(values)]
         else:
-            return RootNode.child[np.argmin(values)]
+            return RootNode.child[np.argmin(values)] #wrong THIS IS SO WRONG
     
     # else, find the optimal tree using GP 
     else:

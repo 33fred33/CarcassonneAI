@@ -152,11 +152,11 @@ class Player:
             
     def UpdateMetricsFile(self, data):
         if self.logs:
-            df = pd.read_csv(self.Tree_file)  # read in file
+            df = pd.read_csv(self.metric_file)  # read in file
             #df = df.append(data, ignore_index = True)  # new data
             data =  {k:[v] for k,v in data.items()}
             new_df = pd.concat([df,pd.DataFrame(data)])  # new data
-            new_df.to_csv(self.Tree_file, index=False)
+            new_df.to_csv(self.metric_file, index=False)
 
 class HumanPlayer(Player):
     

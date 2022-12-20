@@ -11,6 +11,16 @@ import numpy as np
 import ast
 import random
 
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+
+import math
+import statistics as stats
+import matplotlib.pyplot as plt
+from collections import defaultdict
+from scipy.stats import bernoulli
+
 
 
 ###################################################
@@ -810,4 +820,163 @@ def PandasConditionsMeeple(df):
             (df['Feature'] == 'Monastery'),
             (df['Feature'] == 'Total'),
             ]
+
+def tree_data(player, divisions=3, dimension=0, early_cut=False):
+   """Division method Options: percentage, best_changed
+      early_cut: only nodes that were added before a terminal state was reached by an expanded node"""
+   
+   if early_cut:
+      nodes = []
+      for key,node in player.nodes_dict.items():
+         if node.state.isGameOver:
+            break
+         nodes.append(node)
+   else:
+      nodes = [node for key,node in player.nodes_dict.items()]
+   n_nodes = len(player.nodes_dict)
+
+   id_list = []
+   x_list = []
+   id_block_list = []
+   features_list = []
+
+   for node in nodes:
+      id_list.append(node.id)
+      x_list.append(node.state.eval_point()[dimension])
+      id_block_list.append(int((node.id/(n_nodes+1))/(1/divisions)))
+      features_list.append(node.state.featureVector())
+   data_dict = {"player":player.name,"id":id_list, "x":x_list, "id_block":id_block_list}
+
+   for feature_index in range(len(features_list[0])): #Assumes the feature vector size is constant
+      data_dict["feature_"+str(feature_index)] = [fv[feature_index] for fv in features_list]
+
+   data = pd.DataFrame(data_dict)
+   return data
+
+def best_tree_path(node, recommendation_policy="reward"):
+   if recommendation_policy == "reward":
+      while node.child != []:
+         if node.playerSymbol == 1:
+            node = sorted(node.child, key = lambda c: c.Q)[-1]
+         else:
+            node = sorted(node.child, key = lambda c: c.Q)[0]
+   elif recommendation_policy == "visits":
+      while node.child != []:
+         if node.playerSymbol == 1:
+            node = sorted(node.child, key = lambda c: c.visits)[-1]
+         else:
+            node = sorted(node.child, key = lambda c: c.visits)[0]
+   return node
+
+def show_search(data_list, function, title, divisions, n_buckets = 100, type="divisions"):
+   if divisions in [2,3]: colors = ["#5e4e9c","#4169b0","#009ee3"]
+   if divisions==4: colors = ["#cf0000","#a2000d","#740017","#53001b"]
+   n_plots = len(data_list)
+   even_spaces = 1/(n_plots+1)
+   row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
+   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.05,row_heights=row_heights)
+
+   show_legend = [False] + [False for _ in range(n_plots)]
+   for i,data in enumerate(data_list):
+      for div in range(divisions):
+         if div%divisions == 0: s1 = "{:2.0f}".format(100*(div/divisions))
+         else: s1 = "{:2.1f}".format(100*(div/divisions))
+         if (div+1)%divisions == 0: s2 = "{:2.0f}".format(100*((div+1)/divisions))
+         else: s2 = "{:2.1f}".format(100*((div+1)/divisions))
+
+         div_name = s1 + "% to " + s2 + "%"
+         temp_data = data.loc[data["id_block"]==div]
+         fig.append_trace(go.Histogram(x=temp_data.x, nbinsx=n_buckets, xbins={"start":0,"end":1,"size":1/n_buckets}, legendgroup=div, name=div_name, showlegend=show_legend[i], marker={"color":colors[div]}),row=i+1,col=1)
+         
+
+   fig.update_layout(barmode='stack')
+   x = np.linspace(0.001,1,5000)
+   y = [function([i]) for i in x]
+   fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=n_plots+1,col=1)
+   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20),width=1000,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text":title}
+                ,legend=dict(
+                    #title = "Formula",
+                    #orientation="h",
+                    #yanchor="top",
+                    y=-0.65,
+                    xanchor="center",
+                    x=0.5,  
+                    font = dict(family = "Arial", size = 14, color = "black"),
+                    #bordercolor="LightSteelBlue",
+                    borderwidth=2,
+                    itemsizing='trace',
+                    itemwidth = 30
+                    )  )
+   fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
+   #fig.show()
+   return fig
+
+def show_2d_search(data_list, function, title, divisions, n_buckets = 100):
+   colors = ["#5e4e9c","#4169b0","#009ee3"]
+   n_plots = len(data_list)
+   even_spaces = 1/(n_plots+1)
+   row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
+   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.05,row_heights=row_heights)
+
+   show_legend = [False] + [False for _ in range(n_plots)]
+   for i,data in enumerate(data_list):
+      #temp_data = data.assign(div = lambda x: int((x.id/(len(data)+1))/(1/divisions)))
+      div_list = [int((x["id"]/(max(data["id"])+1))/(1/divisions)) for i,x in data.iterrows()]
+      #print("max div",max(div_list))
+      temp_data = data.assign(div = div_list)
+      fig.append_trace(go.Histogram2d(x=temp_data["x"]
+                                       ,y=temp_data["div"]
+                                       ,xbins={"start":0,"end":1,"size":1/n_buckets}
+                                       ,ybins={"start":0,"end":divisions,"size":1}
+                                       ,showlegend=show_legend[i]
+                                       ,colorscale="ice")#[[0,colors[0],[0.5,colors[1]],[1,colors[2]]]])
+                                    ,row=i+1,col=1)
+   x = np.linspace(0.001,1,5000)
+   y = [function([i]) for i in x]
+   fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=n_plots+1,col=1)
+   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20),width=1000,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text":title}
+                #,legend=dict(
+                    #title = "Formula",
+                    #orientation="h",
+                    #yanchor="top",
+                    #y=-0.65,
+                    #xanchor="center",
+                    #x=0.5,  
+                    #font = dict(family = "Arial", size = 14, color = "black"),
+                    #bordercolor="LightSteelBlue",
+                    #borderwidth=2,
+                    #itemsizing='trace',
+                    #itemwidth = 30
+                    #)  
+                  )
+   #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
+   fig.show()
+
+def multiple_runs(state, function, player, runs, random_seed, divisions, dimension=0, division_method = "percentage", early_cut=False):
+   random.seed(random_seed)
+   random_seed_sequence = [random.randint(0,1000000) for _ in range(runs)]
+   collective_data = []
+   fo_logs = defaultdict(lambda:[])
+   for run in range(runs):
+      temp_player=player.ClonePlayer()
+      random.seed(random_seed_sequence[run])
+      np.random.seed(seed=random_seed_sequence[run])
+      temp_player.chooseAction(state)
+      data = tree_data(temp_player, divisions, dimension, early_cut)
+      data.insert(0,"run",[run for _ in range(len(data))])
+      collective_data.append(data)
+      trt = False
+      terminal_count = sum([1 for k,n in temp_player.nodes_dict.items() if n.untried_moves==[] and n.child ==[]])
+      if terminal_count >= 1:
+         trt = True
+      fo_logs["Player"].append(temp_player.name)
+      fo_logs["Tree_Nodes"].append(len(temp_player.nodes_dict))
+      fo_logs["Max_Visits_Path"].append(function(best_tree_path(temp_player.nodes_dict[0],"visits").state.eval_point()))
+      fo_logs["Max_Reward_Path"].append(function(best_tree_path(temp_player.nodes_dict[0]).state.eval_point()))
+      fo_logs["Tree_Reaches_Terminal"].append(trt)
+      fo_logs["Terminals_Reached"].append(terminal_count)
+      fo_logs["Random_Seed"].append(random_seed_sequence[run])
+   df_data = pd.concat(collective_data)
+   fo_logs = pd.DataFrame(fo_logs)
+   return fo_logs, df_data
 

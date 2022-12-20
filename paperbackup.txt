@@ -1,0 +1,678 @@
+{
+
+\documentclass[journal]{IEEEtran}
+
+\usepackage[dvipsnames]{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem,kantlipsum}
+\usepackage{xspace}
+\usepackage{xfrac}
+\usepackage{comment}
+\usepackage[utf8]{inputenc}
+\usepackage[normalem]{ulem}
+
+\usepackage{cancel}
+%\usepackage{hyperref}
+\setlist{nolistsep}
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+% \documentclass[journal]{../sty/IEEEtran}
+
+
+
+
+
+
+
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation
+% can be obtained at: 
+% http://www.ctan.org/pkg/graphicx
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found at:
+% http://www.ctan.org/pkg/epslatex
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). The IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+
+
+% correct bad hyphenation here
+%\hyphenation{op-tical net-works semi-conduc-tor}
+
+\newcommand{\MCTSIts}{\textcolor{black}{Iterations}}
+\newcommand{\MCTSits}{\textcolor{black}{iterations} \xspace}
+\newcommand{\MCTSit}{\textcolor{black}{iteration}}
+
+\newcommand{\longSIEAMCTS}{\textcolor{black}{Monte Carlo Tree Search with evolved tree policy formula}}
+\newcommand{\longPropMCTS}{\textcolor{black}{Pending-name Monte Carlo Tree Search}}
+\newcommand{\longSTMCTS}{\textcolor{black}{Monte Carlo Tree Search with Sufficiency Threshold}}
+\newcommand{\longVanillaMCTS}{\textcolor{black}{Monte Carlo Tree Search with UCB1}}
+\newcommand{\longTunedMCTS}{\textcolor{black}{Monte Carlo Tree Search with UCB1-Tuned}}
+\newcommand{\SIEAMCTS}{\textcolor{black}{SIEA-MCTS}}
+\newcommand{\PropMCTS}{\textcolor{black}{Pending-name-MCTS}}
+\newcommand{\STMCTS}{\textcolor{black}{ST-MCTS}}
+\newcommand{\VanillaMCTS}{\textcolor{black}{MCTS}}
+\newcommand{\TunedMCTS}{\textcolor{black}{MCTS-Tuned}}
+
+\usepackage{amssymb}% http://ctan.org/pkg/amssymb
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\usepackage{tikz}
+
+
+
+\def\cmark{\textcolor{black}{\tikz\fill[scale=0.4](0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;}}
+\def\xmark{\textcolor{black}{\ding{53}}}
+%\newcommand{\xmark}{\ding{55}}%
+
+
+\usepackage{float,booktabs,array}
+\newcommand\longemdash{\textemdash\textemdash%
+    \textemdash\textemdash\textemdash\textemdash%
+    \textemdash\textemdash\textemdash\textemdash}
+
+
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+
+\title{Tree Policy Evolutionary Prospective for Monte Carlo Tree Search}
+
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+
+
+
+\author{Fred Valdez Ameneyro,  Edgar Galv\'an
+%        John~Doe,~\IEEEmembership{Fellow,~OSA,}
+%        and~Jane~Doe,~\IEEEmembership{Life~Fellow,~IEEE}% <-this % stops a space
+\thanks{The authors are part of the Naturally Inspired Computation Research Group and the Department
+of Computer Science, Maynooth University, Ireland  e-mails: fred.valdezameneyro.2019@mumail.ie, edgar.galvan@mu.ie}}
+
+% The paper headers
+%\markboth{Journal of \LaTeX\ Class Files,~Vol.~14, No.~8, August~2015}%
+\markboth{}
+\markboth{}
+
+%{Shell \MakeLowercase{\textit{et al.}}: Bare Demo of IEEEtran.cls for IEEE Journals}
+% The only time the second header will appear is for the odd numbered pages
+% after the title page when using the twoside option.
+% 
+% *** Note that you probably will NOT want to include the author's ***
+% *** name in the headers of peer review papers.                   ***
+% You can use \ifCLASSOPTIONpeerreview for conditional compilation here if
+% you desire.
+
+
+
+
+% If you want to put a publisher's ID mark on the page you can do it like
+% this:
+%\IEEEpubid{0000--0000/00\$00.00~\copyright~2015 IEEE}
+% Remember, if you use this you must call \IEEEpubidadjcol in the second
+% column for its text to clear the IEEEpubid mark.
+
+
+
+% use for special paper notices
+%\IEEEspecialpapernotice{(Invited Paper)}
+
+
+
+
+% make the title area
+\maketitle
+
+
+\begin{abstract}
+
+
+The Upper Confidence Bounds for Trees (UCT) is the most commonly used Monte Carlo Tree Search (MCTS) Tree Policy. UCT iteratively uses the Upper Confidence Bounds (UCB1) formula to decide which branches of the tree should be explored or exploited next. UCT endows MCTS with an anytime stopping capability and ensures convergence in polynomial time by bounding the expected regret. Multiple proposals exist to improve UCT in specific domains but can rarely be generalised. Evolutionary Algorithms (EA) offer an alternative to create policies that can adapt to a larger extent of domains. In this paper we propose new ways to evolve the MCTS's Tree Policy and discuss the limitations and strengths of such methods. We then compare the proposed policies with existing ones in a fair set of domains with diverse fitness landscapes that will help us to understand and analyse their behaviour.
+
+
+
+  
+
+\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+\begin{IEEEkeywords}
+Monte Carlo Tree Search, Tree Policy, Evolutionary Algorithms
+\end{IEEEkeywords}
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+
+\section{Introduction}
+
+\label{sec:introduction}
+
+\IEEEPARstart{M}{onte} Carlo Tree Search (MCTS)\cite{kocsis2006bandit} is a decision making algorithm that has been successfully applied to domains that can be modelled as Markov Decision Processes (MDPs). In its vanilla form and in most cases, MCTS uses the Upper Confidence Bounds for Trees (UCT) as its tree policy to sample the search tree and gather information. Starting from the root, UCT chooses the node with the largest Upper Confidence Bound (UCB1)\cite{auer2002finite} until a leaf node is reached, which is the node believed to be the current most interesting to be explored. 
+
+In this work we are looking for a generalised improvement to MCTS i.e. there are no domains where the proposed algorithm under-performs when compared with the vanilla MCTS. Ideally any MCTS improvement should maintain the any-time capability and not rely on off-line training. Such generalisation is desirable in domains where the task varies greatly over time (for example, in Ms. PacMan the existence of the power pill that allows PacMan to eat the ghosts renders a completely different game inside of the game \cite{pepels2014real}). 
+%Random playouts are a domain independent evaluation function that has been proven to contain information about the true value of a given state.
+
+\section{Background}
+\label{sec:background}
+
+\subsection{Monte Carlo Tree Search}
+\label{ssec:mcts}
+
+Monte Carlo Tree Search is a four-steps algorithm that receives an initial state as input and outputs the action it believes is the best available. To do so, MCTS requires access to a \textit{forward model} that can predict future states if any actions are hypothetically performed. MCTS will construct a partial tree with the states it encounters, where the edges are the actions and the nodes are the states. We will call every single run through the four steps an \textit{\MCTSit}. MCTS's four steps are:
+
+\begin{itemize}
+    \item \textbf{Selection}: The \textit{Tree policy} is used to find a leaf node, now called the selected node, to be explored next. A detailed explanation is given in Section \ref{ssec:uct}.
+    \item \textbf{Expansion}: A new node is generated from the selected node using the forward model. The action performed from the selected node's state is chosen randomly. The new node is called the expanded node.
+    \item \textbf{Simulation}: A series of playouts are simulated starting from the expanded node. Each playout selects actions following the \textit{Default policy} until a terminal state is reached. The amount of playouts to be executed is a MCTS's parameter. The outcomes of the playouts become the estimated value of the expanded node, also called the \textit{reward}.
+    \item \textbf{Backpropagation}: Every node that connects the expanded node with the root is updated. The reward is backpropagated using the \textit{average backup operator}. To do so, each node of the tree stores the visit count and the reward. Updated nodes have their visit count increased by 1 and their reward increased by the expanded node's reward.
+\end{itemize}
+
+MCTS can be stopped anytime in between \MCTSits to obtain MCTS's current belief of the best action available. The selection method for the best action available is the \textit{Recommendation Policy}, which normally is the action that leads to the most visited child node.
+
+MCTS is a very successful algorithm with numerous extensions and applications \cite{browne2012survey} \cite{swiechowski2021monte}. MCTS requires no domain knowledge, making it versatile enough to lead the General Video Game Playing (GVGP) competition \cite{perez2016general} \cite{perez2019general}. It was also used in the AlphaGo \cite{alphago} agent, which achieved a massive breakthrough by defeating one of the best human Go players. AlphaZero is now the state of the art in Go and Chess \cite{alphagozero} \cite{alphazero} by combining MCTS with Deep Neural Networks, trained uniquely with self-play.
+
+\subsection{Upper Confidence Bounds for Trees}
+\label{ssec:uct}
+
+UCT models the action space as a Multi-Armed Bandits (MAB) problem, where the goal is to minimise the cumulative regret if infinite time is given. The UCT policy selects the child node with the maximum UCB1 value \cite{auer2002finite} iteratively until a node that can be expanded is reached. UCB1 formula is shown in Equation \ref{eq:ucb1}.
+
+\begin{equation}
+  UCB1_{i} = \overline{Q_{i}} + C \sqrt{\frac{2 \ln (N)}{n_{i}}}
+  \label{eq:ucb1}
+\end{equation}
+
+Where $\overline{Q_{i}}$ and ${n_{i}}$ are the average reward and number of visits of node $i$ respectively, $N$ is the number of visits of the parent node and $C$ is a parameter that balances exploration and exploitation. The value of $C$ is highly influential for MCTS's performance \cite{ramanujan2011trade}, with $C=\sqrt(2)$ being a common default when the rewards are normalized between 0 and 1.
+
+\subsection{Tree properties}
+\label{ssec:tree}
+%Assuming an ideal default policy (a policy that can estimate the value of any state with no bias)
+In deterministic, adversarial planning domains with perfect information, identified domain characteristics that influence MCTS's performance are:
+\begin{itemize}
+    \item \textbf{Branching factor} 
+    \item \textbf{Search traps} or \textbf{trap states} \cite{ramanujan2010adversarial}: Search traps are states from where there exist a strategy for the opponent to get the win. When a state $s$ has an action that leads to a search trap, the player is said to be \textit{at risk} at state $s$.
+    \item \textbf{Optimistic moves} \cite{finnsson2011game}: Moves that appear to be good until a \textit{refutation} is found deeper in the tree. MCTS allocates a lot of resources to such moves even after the refutation is discovered.
+    \item \textbf{Progression} \cite{finnsson2011game}: Some domains can have infinite loops (for example, repeating moves back and forth in chess) that are addressed with an imposed upper limit in the number of state repetitions or move repetitions. The existence of loops lead to trivial abrupt termination states that hinder both the tree growth and playouts.
+    \item \textbf{Smoothness of the underlying value function} \cite{james2017analysis}
+    \item \textbf{Bias in suboptimal moves} \cite{imagawa2015enhancements}: refers to unfairness in the amount of good and bad moves for each player with respect to each other, with emphasis in the default policy.
+\end{itemize}
+
+Trap states, optimistic moves and bias in suboptimal moves are correlated concepts that describe the necessity of finding specific moves deeper in the tree to be able to effectively evaluate a given state. Said moves are referred to as \textit{refutations} to initially promising actions. Minimax algorithms are stronger than MCTS methods when the search tree features many search traps and refutations, because Minimax is able to sample the search space and evaluate such traps while MCTS needs to spend a larger amount of resources to override its initial positive belief \cite{ramanujan2011behavior}. The density of trap states in a search tree is denoted as the \textit{tacticality} of the domain \cite{baier2014monte}. In domains with both high tacticality and branching factor, refutation moves get initially buried with their sibling's rewards when they are averaged by the MCTS's \textit{average backup operator}.
+
+Using the \textit{minimax backup operator} in MCTS has been explored in \cite{ramanujan2011trade} greatly improving the performance of the MCTS when an accurate evaluation function is available. The minimax backup operator backpropagates the best child's reward instead of the average of all sibling nodes. According to \cite{coulom2006efficient}, the average backup operator seems to work better when the default policy used to evaluate the states is random playouts. UCT with random playouts is guaranteed to converge to the true minimax value of every node in the tree, but the convergence time might be super-exponential \cite{coquelin2007bandit}. 
+
+\subsection{Adaptable Tree Policy}
+\label{ssec:adaptable}
+
+If random playouts converge to the minimax value, and it has been proven that using the \textit{Minimax backup operator} is ideal when an accurate evaluation function is available, it is natural to believe that the average reward can be used at the beginning of the exploration when there exists uncertainty in the evaluation and then transition to the minimax reward as the evaluations become more reliable. This idea is somewhat related to the \textit{sufficiency threshold} (ST) \cite{gudmundsson2013sufficiency} heuristic where, during the selection step of MCTS, if a move is good enough the exploration parameter is ignored and the "sufficiently good" move is selected. ST speeds up the convergence of the average reward to the minimax one because the best move will be sampled exclusively and will eventually eclipse that of its siblings.
+
+ST requires the highly influential threshold parameter to be set in order to work, and said parameter can greatly vary with the domain. An adaptable transition from the average reward to the minimax reward can be used instead, and is the inspiration for the proposed algorithm presented in section \ref{sec:proposal}. Our approach, called \PropMCTS, uses information about the reward distribution of children nodes to encourage convergence to the minimax value when required. There exist heuristics that backpropagate additional information to later influence the selection step of the MCTS by altering the UCB1 formula. Examples are the Rapid Action Value Estimation (RAVE) \cite{gelly2011mctsravego} that stores the \textit{all moves as first} (AMAF) reward and visits of the action, the UCB1-Tuned and the single-player MCTS (SP-MCTS) \cite{schadd2008single} that both require the standard deviation of the rewards.
+
+An ambitious attempt to achieve an improved tree policy at expense of computational power is to evolve the UCT formula with Genetic Programming (GP) within the MCTS, called \SIEAMCTS \cite{}. The embedded Genetic Program is further improved with promoted population diversity through semantics \cite{GalvanS19}. A trade-off emerges between the number of MCTS \MCTSits used to optimise the tree policy and the number of \MCTSits to actually use the evolved formula. It is also hard to evaluate how good a formula is without injecting some bias. The immense formula search space and lack of an adequate fitness function leads the evolution to sometimes produce trivially greedy or random-equivalent formulas.
+
+Other heuristic methods for improving MCTS by biasing or pruning the search as more information is collected are \textit{progressive bias}, \textit{progressive unpruning} \cite{chaslot2008progressive}, \textit{progressive widening}\cite{coulom2007computing}, the \textit{knowledge bias} \cite{perez2014knowledge} and the \textit{Maximum Frequency Method} \cite{imagawa2015enhancements} to mention a few.
+
+\section{Proposal}
+\label{sec:proposal}
+
+\subsection{Tree Search structure metric}
+
+
+
+ 
+
+%Generality is desired because a But as observed in \cite{}, the evolved formulas many times.
+%The reported fitness evaluation of an individual is the total reward found after a fixed number of "independent MCTS \MCTSits" using its formula, with the aim to maximise it. 
+
+%Then, assuming that $r_{s}$ is the true minimax value of $P$, the total children's influence can be calculated:
+
+%Relative meaningfulness
+%Beam volatility
+
+%How many playouts?
+
+
+%The possibilities can be extended if the algorithm has access to the feature vector that fully describes a given state (or to the available knowledge in incomplete information games).
+
+
+
+%Let $P$ be a node with $b$ children nodes. Even if one of those children has a very high reward (let $S$ with reward $r_{s}$ be a child to $P$), $P$ will not be interesting to the UCT policy if the average reward of the rest of the children is relatively small and the branching factor $b$ is large.
+
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+Two problems are used in this work: breakthrough and function optimisation.
+
+Breakthrough is known for being a hard problem for MCTS due to its high tacticality \cite{baier2014monte}. MCTS agents that play breakthrough have been specially modified with heuristic evaluation functions, node prior visit and reward initialisation, transposition tables, endgame solver and heavy playouts \cite{lorentz2013programming}. By altering the board size, the number of pieces or the initial position, brakthrough can be used to showcase how any planning algorithm faces most of the tree properties mentioned in section \ref{ssec:tree}.
+
+A set of function optimisation problems is also used to visually illustrate the behaviour of the algorithms. A visual interpretation is required given the nature of the evolutionary inspired MCTS, where evolved tree policy formulas have unique characteristics that would otherwise require a mathematical analysis each.
+
+Five MCTS agents are compared in the experiments:
+\begin{itemize}
+    \item Monte Carlo Tree Search with UCB1 (\textbf{\VanillaMCTS})
+    \item Monte Carlo Tree Search with UCB1-Tuned (\textbf{\TunedMCTS})
+    \item Monte Carlo Tree Search with Sufficiency Threshold (\textbf{\STMCTS})
+    \item Monte Carlo Tree Search with evolved tree policy formula (\textbf{\SIEAMCTS})
+    \item Proposed Monte Carlo Tree Search (\textbf{\PropMCTS})
+\end{itemize}
+
+\subsection{Function Optimisation}
+\label{ssec:fo}
+
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/Functions.png}
+    \caption{Functions used for the function optimisation problem.}
+    \label{fig:functions}
+\end{figure}
+
+
+Function Optimisation as described in \cite{james2017analysis}, \cite{bubeck2010x}, is a problem where each state $s$ represents a domain [$a_{s}$,$b_{s}$], starting at [0,1]. The available actions from state $s$ are $b$ evenly spaced partitions of the domain, sized $\frac{a_{s}-b_{s}}{b}$ each, where $b$ is the selected branching factor. The objective is to find the state where the global maxima of a given function $f$ lies. A state is said to be terminal if its domain is smaller than the threshold $t$, in other words $b_{s}-a_{s}<t$. The threshold is set as $t=10^{-5}$ and the branching factor is set as $b=2$
+
+The MCTS rollouts use a random uniform default policy. When a terminal state is reached, $f$ is evaluated at the state's central point $c_{s}=\frac{(a_{s}-b_{s})}{2}$. The reward $r_{s}$ can either be 1 or 0 and is sampled from a Bernoulli distribution $r_{s}\sim Bern(f(c_{s}))$. Thus, $0\leq f(x)\leq 1 | x \in [0,1] $ is ensured for every function $f$.
+
+The five functions are shown in Figure \ref{fig:functions}. The functions were chosen to exhibit unique characteristics that will help to construct the final conclusions.
+\begin{itemize}
+    \item Unimodal function. Used as a baseline.
+
+    \begin{equation}
+      f_{1}(x) = \sin(\pi x)
+      \label{eq:f1}
+    \end{equation}
+    
+    \item Multimodal function as presented in \cite{bubeck2010x}.
+    
+    \begin{equation}
+      f_{2}(x) =  0.5 \sin(13 x)  \sin(27 x) + 0.5
+      \label{eq:f2}
+    \end{equation}
+    
+    \item A function with increasing smoothness. Multiple optima is present in the first half of the domain. As presented in \cite{james2017analysis}
+    \begin{equation}
+        f_{3}(x)=\begin{cases*}
+            0.5 + 0.5 | \sin( \frac{1}{x^{5}})| & when $x<0.5$,\\
+            \frac{7}{20} + 0.5 | \sin( \frac{1}{x^{5}})| & when $x\geq0.5$.
+        \end{cases*} 
+        \label{eq:f3}
+    \end{equation}
+
+    \item A deceptive function.
+    \begin{equation}
+        f_{4}(x) =  0.5 x + (-0.7 x+1)\sin(5 \pi  x)^{4}
+        \label{eq:f4}
+    \end{equation}
+    
+    \item A deceptive function with hard to find optima
+    \begin{equation}
+        f_{5}(x) =  0.5 x + (-0.7 x+1)\sin(5 \pi  x)^{80}
+        \label{eq:f5}
+    \end{equation}
+\end{itemize}
+
+Each algorithm is asked to make a decision from the initial state. Regardless of their suggested actions, we analyse how the search tree was constructed by the MCTS. The parameters used for each agent are shown in table \ref{tab:parameters}
+
+
+
+\begin{table}[tb]
+\centering
+\caption{MCTS agents parameters.}
+\resizebox{0.90\columnwidth}{!}{ 
+\small\begin{tabular}{|l|r|} \hline 
+\emph{Parameter} & \emph{Value} \\ \hline \hline
+
+\multicolumn{2}{|c|}{All MCTS agents}\\ \hline
+C & {$\frac{1}{2}, 1, \sqrt2, 2, 3$} \\ \hline
+Rollout playouts & 1 \\ \hline
+\MCTSIts & {5000} \\ \hline
+
+\multicolumn{2}{|c|}{\SIEAMCTS}\\ \hline
+($\mu$,$\lambda$)-ES &  $\mu=1$, $\lambda=4$  \\ \hline
+Generations & 20 \\ \hline
+Type of Mutation & Subtree (90\% internal node, 10\% leaf) \\ \hline
+Initialisation Method & Initial formula: UCB1 \\ \hline
+Maximum depth & 8 \\ \hline
+\MCTSIts & 2400 evolution + 2600 \\ \hline
+
+\multicolumn{2}{|c|}{\STMCTS}\\ \hline
+Sufficiency threshold & 0.6 \\ \hline 
+
+\end{tabular}
+}
+\label{tab:parameters}
+\end{table}
+
+%The Function Optimisation problem is also setup as a multi-player game, where the first player tries to maximise $f$ while the second player tries to minimise it.
+
+
+\section{Results}
+\label{sec:results}
+
+
+\subsection{Function Optimisation}
+\label{ssec:spfo}
+
+
+
+
+
+
+\begin{table}[tb]
+        \caption{Function Optimisation Results for Function 1 from Figure \ref{fig:functions}}
+    \begin{center}
+    \resizebox{\columnwidth}{!}{%
+        \begin{tabular}{|c||l|r|r|r|r|}
+        \hline
+        {Agent} & {Distinction} & {Nodes/\MCTSIts} & {Terminal states}  &  {VPath}  & {RPath}   \\ \hline \hline
+        \VanillaMCTS    & $C=0.5$   & $100\pm0$  & $0\pm0$  & $0.999\pm0$  & $0.999\pm0$    \\ \hline
+        \VanillaMCTS    & $C=1$   & $100\pm0$  & $0\pm0$  & $0.999\pm0$  & $0.999\pm0$    \\ \hline
+        \VanillaMCTS    & $C=\sqrt2$& $100\pm0$  & $0\pm0$  & $0.998\pm0$  & $0.999\pm0$    \\ \hline
+        \VanillaMCTS    & $C=2$     & $100\pm0$  & $0\pm0$  & $0.998\pm0$  & $0.998\pm0$    \\ \hline
+        \VanillaMCTS    & $C=3$     & $100\pm0$  & $0\pm0$  & $0.998\pm0$  & $0.998\pm0$    \\ \hline
+        \SIEAMCTS       &           & $15.235\pm33.27$  & $4.966\pm9.01$  & $0.795\pm0.27$  & $0.897\pm0.16$    \\ \hline
+
+        \end{tabular}
+    }    
+    \label{table:f1_results}
+    \end{center}
+\end{table}
+
+
+
+\begin{table}[tb]
+        \caption{Function Optimisation Results for Function 2 from Figure \ref{fig:functions}}
+    \begin{center}
+    \resizebox{\columnwidth}{!}{%
+        \begin{tabular}{|c||l|r|r|r|r|}
+        \hline
+        {Agent} & {Distinction} & {Nodes/\MCTSIts} & {Terminal states}  &  {VPath}  & {RPath}   \\ \hline \hline
+        \VanillaMCTS    & $C=0.5$   & $88.56\pm4.43$  & $1211.433\pm185.39$  & $0.95\pm0.02$  & $0.95\pm0.02$    \\ \hline
+
+        \VanillaMCTS    & $C=1$     & $99.978\pm0.1$  & $698.433\pm294.63$  & $0.974\pm0$  & $0.974\pm0$    \\ \hline
+
+        \VanillaMCTS    & $C=\sqrt2$& $100\pm0$  & $199.2\pm147.75$  & $0.972\pm0$  & $0.972\pm0$    \\ \hline
+
+        \VanillaMCTS    & $C=2$     & $100\pm0$  & $0\pm0$  & $0.972\pm0$  & $0.972\pm0$    \\ \hline
+
+        \VanillaMCTS    & $C=3$     & $100\pm0$  & $0\pm0$  & $0.969\pm0$  & $0.969\pm0$    \\ \hline
+
+        \SIEAMCTS       &           & $19.923\pm35.03$  & $13.5\pm19.32$  & $0.571\pm0.3$  & $0.636\pm0.26$    \\ \hline
+
+        \end{tabular}
+    }    
+    \label{table:f2_results}
+    \end{center}
+\end{table}
+
+
+
+\begin{table}[tb]
+        \caption{Function Optimisation Results for Function 3 from Figure \ref{fig:functions}}
+    \begin{center}
+    \resizebox{\columnwidth}{!}{%
+        \begin{tabular}{|c||l|r|r|r|r|}
+        \hline
+        {Agent} & {Distinction} & {Nodes/\MCTSIts} & {Terminal states}  &  {VPath}  & {RPath}   \\ \hline \hline
+        \VanillaMCTS    & $C=0.5$   & $91.075\pm8.04$  & $636.133\pm189.88$  & $0.989\pm0.04$  & $0.992\pm0.02$    \\ \hline
+        \VanillaMCTS    & $C=1$   & $100\pm0$  & $0\pm0$  & $0.983\pm0.02$  & $0.988\pm0.01$    \\ \hline
+        \VanillaMCTS    & $C=\sqrt2$& $100\pm0$  & $0\pm0$  & $0.963\pm0.04$  & $0.967\pm0.07$    \\ \hline
+        \VanillaMCTS    & $C=2$     & $100\pm0$  & $0\pm0$  & $0.915\pm0.11$  & $0.91\pm0.13$    \\ \hline
+        \VanillaMCTS    & $C=3$     & $100\pm0$  & $0\pm0$  & $0.864\pm0.14$  & $0.842\pm0.14$    \\ \hline
+        \SIEAMCTS       &           & $9.887\pm24.68$  & $7.633\pm12.99$  & $0.852\pm0.16$  & $0.85\pm0.16$    \\ \hline
+
+
+        \end{tabular}
+    }    
+    \label{table:f3_results}
+    \end{center}
+\end{table}
+
+\begin{table}[tb]
+        \caption{Function Optimisation Results for Function 4 from Figure \ref{fig:functions}}
+    \begin{center}
+    \resizebox{\columnwidth}{!}{%
+        \begin{tabular}{|c||l|r|r|r|r|}
+        \hline
+        {Agent} & {Distinction} & {Nodes/\MCTSIts} & {Terminal states}  &  {VPath}  & {RPath}   \\ \hline \hline
+        \VanillaMCTS    & $C=0.5$   & $83.088\pm12.6$  & $1087.966\pm294.48$  & $0.944\pm0.04$  & $0.944\pm0.04$    \\ \hline
+        \VanillaMCTS    & $C=1$   & $99.572\pm0.85$  & $1029.5\pm169.84$  & $0.978\pm0$  & $0.978\pm0$    \\ \hline
+        \VanillaMCTS    & $C=\sqrt2$& $100\pm0$  & $420.966\pm113.69$  & $0.977\pm0$  & $0.977\pm0$    \\ \hline
+        \VanillaMCTS    & $C=2$     & $100\pm0$  & $0.9\pm2.69$  & $0.977\pm0$  & $0.977\pm0$    \\ \hline
+        \VanillaMCTS    & $C=3$     & $100\pm0$  & $0\pm0$  & $0.975\pm0$  & $0.974\pm0$    \\ \hline
+        \SIEAMCTS       &           & $6.289\pm17.92$  & $7.366\pm9.66$  & $0.691\pm0.18$  & $0.648\pm0.21$    \\ \hline
+
+        \end{tabular}
+    }    
+    \label{table:f4_results}
+    \end{center}
+\end{table}
+
+\begin{table}[tb]
+        \caption{Function Optimisation Results for Function 5 from Figure \ref{fig:functions}}
+    \begin{center}
+    \resizebox{\columnwidth}{!}{%
+        \begin{tabular}{|c||l|r|r|r|r|}
+        \hline
+        {Agent} & {Distinction} & {Nodes/\MCTSIts} & {Terminal states}  &  {VPath}  & {RPath}   \\ \hline \hline
+        \VanillaMCTS    & $C=0.5$   & $37.628\pm6.43$  & $620.966\pm95.73$  & $0.836\pm0.03$  & $0.836\pm0.03$    \\ \hline
+        \VanillaMCTS    & $C=1$   & $58.178\pm8.31$  & $861.266\pm128.54$  & $0.884\pm0.04$  & $0.886\pm0.04$    \\ \hline
+        \VanillaMCTS    & $C=\sqrt2$& $74.346\pm10.49$  & $893.2\pm78.31$  & $0.91\pm0.05$  & $0.912\pm0.05$    \\ \hline
+        \VanillaMCTS    & $C=2$     & $86.721\pm5.67$  & $810.6\pm191.78$  & $0.966\pm0.03$  & $0.966\pm0.03$    \\ \hline
+        \VanillaMCTS    & $C=3$     & $100\pm0$  & $22.466\pm72.49$  & $0.844\pm0.07$  & $0.908\pm0.07$    \\ \hline
+        \SIEAMCTS       &           & $11.792\pm29.92$  & $3.2\pm2.74$  & $0.436\pm0.2$  & $0.458\pm0.16$    \\ \hline
+
+
+        \end{tabular}
+    }    
+    \label{table:f5_results}
+    \end{center}
+\end{table}
+
+Tables \ref{table:f3_results},\ref{table:f4_results} and \ref{table:f5_results} show the averaged results of 30 runs of each algorithm on every function presented in Figure \ref{fig:functions}. 
+The average node count of the search trees is shown in the \textit{Nodes} column. With every MCTS \MCTSit, the Expansion step is expected to add a new node to the search tree. A MCTS iteration won't expand a node if the node selected in the Selection step is a node with a terminal state. The amount of unique terminal states reached is shown in the \textit{Terminal states} column. Reaching a terminal state with a node expansion is achievable with the 5000 \MCTSits that each algorithm was allowed to run for because of the low max tree depth of the Function Optimisation problem. For a branching factor of $b=2$ and a minimum range of $t=10^{-5}$, 17 actions are enough to reach a terminal state ($\frac{1}{2^{18}}\leq10^{-5}$) and the state space is $2^{18}$. As $C$ is smaller, the \VanillaMCTS is more likely to reach terminal states and produce a tree with less nodes than the number of \MCTSits. This happens because most of the resources are spent in the same nodes more often, eventually reaching the bottom of the tree. Said outcome is expected and is more evident for the fifth function (Table \ref{table:f5_results}). MCTS agents are more likely to exhibit such behaviour if the function has fewer interesting regions to be explored. This the maximum number of nodes for the \SIEAMCTS is 2600 instead of 5000. In the \SIEAMCTS, the evolution requires entire MCTS \MCTSits to evolve the tree policy formula. This means that less resources are spent growing the tree, and less nodes are expanded, but the counts shown in the "Nodes" column are still quite low for all the functions. This implies that the evolved formulas failed to encourage exploration and the same terminal nodes were constantly revisited, impeding different nodes to be expanded.
+
+We keep track of two root-to-leaf node paths generated by the MCTS algorithms. \textit{VPath} is the path that follows the most visited nodes, and is MCTS's belief of the optimal decision path. \textit{RPath} is the path following the maximum rewards which represents the latest best path found by the algorithm. Both \textit{VPath} and \textit{RPath} are better as they come closer to 1. In general, \SIEAMCTS seems to underperform when compared with any other algorithm. 
+
+In Figures \ref{fig:f1}, \ref{fig:f2}, \ref{fig:f3}, \ref{fig:f4}, \ref{fig:f5} the location of the investment of the resources for each agent is depicted. Their $x$ corresponds to the $x$ of the domain, and $y$ is the count of nodes expanded in that region. The results are averaged from 30 independent runs for each agent. The histograms are generated by sorting the nodes of the tree in bins, according to the location of the center of their states. The goal is to illustrate how and when the nodes are expanded in different regions of the domain. The area color becomes darker if the nodes are generated later in the search. 
+
+Referring to Figure \ref{fig:f1}, it can be seen how the exploration distribution greatly varies with the $c$ parameter for the \VanillaMCTS. As expected, a larger $c$ makes the algorithm explore a wider region of the domain. The \SIEAMCTS depicts an inconsistent behaviour, with no clear preference for any region of the domain. As explained before, the \SIEAMCTS expands fewer nodes, so the nodes added at the beginning of each run are more noticeable than those of the \VanillaMCTS. If a evolved formula is fully greedy, the run will produce a maximum of 35 nodes (the root node plus the binary siblings for the 17 selected actions). Such behavior occurred in most of the runs, and those nodes are barely visible in the histograms. Figures \ref{fig:hist1} and \ref{fig:hist5} show the maximum depth reached by the search at every point in the domain. In them, the most explored regions of the domain can be devised. The color goes darker as the search progressed.
+
+Figures \ref{fig:depth_f1} and \ref{fig:depth_f5} show the average depth of the expanded nodes. The $x$ is the number of MCTS iterations and the $y$ is the depth of the expanded node. For \SIEAMCTS, few runs generate the 2600 nodes, so the line becomes highly volatile. 
+
+Summary of observations:
+\begin{itemize}
+    \item (About Table \ref{table:f1_results}) For Function 1 the terminal states are never reached by the \VanillaMCTS because a big portion of the domain is interesting and the resources are distributed
+    \item (About the Tables \ref{table:f1_results} to \ref{table:f5_results}) Lower C \VanillaMCTSalgorithms reach the terminal more often because of the lack of exploration
+    \item (About the Figure \ref{fig:hist1} ) Some regions of the domain are empty because no state was sampled there.
+\end{itemize}
+
+
+
+
+%As more actions are taken and the algorithm travels down the tree, the range becomes smaller. Eventually, the variability of the function in that range will be virtually non-existent. Since random playouts sample that range it will reach terminal nodes that are almost the same regardless of the actions. 
+
+
+
+
+%We need to establish how deep in the tree MCTS needs to go to start sampling regions of the domain with  no variations.
+
+%The divisions show:
+%theoretical \MCTSits needed to reach the even sampling level. From here we can assume that the tree search has a expanded leaf node that shows the best and consistent performance, so the tree will converge to it at its own convergence speed.
+
+%An arbitrary amount of MCTS \MCTSits leads to erroneous conclusions. For instance, if the \MCTSits are too many relative to the problem complexity, convergence is granted in most cases.
+
+%How does it behave when the outcome is "unlucky"? To build such an experiment it is important to avoid creating a very unlikely events (for example, enforcing 5 times a 0 outcome from a $p=90$\% bernoulli distribution)
+
+%A big sample of uniform random playouts return an integral equivalent value for the domain.
+
+%Maybe stopping the \MCTSits if a leaf node belongs to a terminal state, which means that the algorithm is finding the true value of the path (with certain degree of randomness). From there on it is a convergence speed test, and hides the true behaviour of the algorithm.
+
+%The rewards lie between 0 and 1, so L=0.25 and U=0.75 (Bernoulli blabla from finite analysis).
+
+%Evolving mathematical expressions with Genetic Programming is a very heavy computing task because of the immense search space, discontinuities, bloat and redundancy. It is known that GP generates clusters of similar blocks that survive better through the generations.
+
+%As the peaks become thinner, they become search traps: the search will sample a low reward most of the time unless it samples the specific right zone down in the tree.
+
+%The recommendation policy is the node with the highest reward
+
+
+%Strategy policies assume that each arm distribution is fixed, but in a tree search context the reward distribution becomes volatile. As the search progresses, discovered actions might lead to radically different evaluations.
+
+%EA a lot more volatile, but could be a good thing.
+%The output value with the most visits differs from the one with the best reward. The best reward reflects the latest findings of the algorithm, not the 
+
+%The formulas are sometimes purely greedy, not allowing sideways tree growth. Evolving only the reward side is trickier, the fitness function being the collective rewards leads to increasing their weight (i.e. decrease C or multiply Q by large numbers or itself)
+
+
+%The positive results in the game of carcassonne can be explained as follows. 
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/f0.png}
+    \caption{Histogram of the location of the nodes for Function 1.}
+    \label{fig:f1}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/f1.png}
+    \caption{Histogram of the location of the nodes for Function 2.}
+    \label{fig:f2}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/f2.png}
+    \caption{Histogram of the location of the nodes for Function 3.}
+    \label{fig:f3}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/f3.png}
+    \caption{Histogram of the location of the nodes for Function 4.}
+    \label{fig:f4}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/f4.png}
+    \caption{Histogram of the location of the nodes for Function 5.}
+    \label{fig:f5}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_f0.png}
+    \caption{Expanded node's depth for every MCTS iteration for Function 1}
+    \label{fig:depth_f1}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_f4.png}
+    \caption{Expanded node's depth for every MCTS iteration for Function 5}
+    \label{fig:depth_f5}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_histo_max_2k_f0.png}
+    \caption{Max depth reached by the search tree in 30 runs for Function 1}
+    \label{fig:hist1}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_histo_max_2k_f1.png}
+    \caption{Max depth reached by the search tree in 30 runs for Function 2}
+    \label{fig:hist2}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_histo_max_2k_f2.png}
+    \caption{Max depth reached by the search tree in 30 runs for Function 3}
+    \label{fig:hist3}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_histo_max_2k_f3.png}
+    \caption{Max depth reached by the search tree in 30 runs for Function 4}
+    \label{fig:hist4}
+\end{figure}
+
+\begin{figure}[t] 
+    \centering\includegraphics[width=0.9\columnwidth]{Images/depth_histo_max_2k_f4.png}
+    \caption{Max depth reached by the search tree in 30 runs for Function 5}
+    \label{fig:hist5}
+\end{figure}
+
+\subsection{Breakthrough}
+\label{ssec:breakthrough}
+
+
+
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+
+
+
+
+
+
+\bibliographystyle{abbrv}
+\bibliography{Utilities/MyBib.bib}
+
+
+\end{document}
+}
+

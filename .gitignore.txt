@@ -1,1 +1,7 @@
 logs/
+__pycache__/
+Carcassonne_Game/__pycache__/
+Function_Optimisation_Game/__pycache__/
+player/__pycache__/
+pygameCarcassonneDir/__pycache__/
+TicTacToe_Game/__pycache__/
