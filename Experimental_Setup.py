@@ -980,3 +980,30 @@ def multiple_runs(state, function, player, runs, random_seed, divisions, dimensi
    fo_logs = pd.DataFrame(fo_logs)
    return fo_logs, df_data
 
+def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", exp_names=None):
+    """
+    Collects data in "collective_tree_logs.csv".
+    Logs names should be saved as "logs_path/Results_f0_c0.5" where f is the function, c is the parameter
+    Logs in that folder should contain "Final_Player_logs.csv" and "Parameter_logs.csv"
+    """
+        
+    if exp_names is None:
+        exp_names = [ item for item in os.listdir(logs_path) if os.path.isdir(os.path.join(logs_path, item)) ]
+    join = "/"
+    final_df = pd.DataFrame()
+    for i,exp_name in enumerate(exp_names):
+        data = pd.read_csv(logs_path + join + exp_name + join + "Final_Player_logs.csv")
+        pars = pd.read_csv(logs_path + join + exp_name + join + "Parameter_logs.csv")
+        fi_list = [pars["func_index"][0] for _ in range(len(data))]
+        c_list = [pars["c_param"][0] for _ in range(len(data))]
+        expname_list = [exp_name for _ in range(len(data))]
+        data["function"] = fi_list
+        data["c"] = c_list
+        data["expname"] = expname_list
+        if i==0:
+            final_df = pd.DataFrame(data)
+        else:
+            final_df = pd.concat([final_df,data]) 
+    
+    final_df.to_csv(logs_path + join + output_name, index=False)
+
