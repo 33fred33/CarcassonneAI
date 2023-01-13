@@ -868,6 +868,65 @@ def best_tree_path(node, recommendation_policy="reward"):
             node = sorted(node.child, key = lambda c: c.visits)[0]
    return node
 
+def multiple_runs(state, function, player, runs, random_seed, divisions, dimension=0, division_method = "percentage", early_cut=False):
+   random.seed(random_seed)
+   random_seed_sequence = [random.randint(0,1000000) for _ in range(runs)]
+   collective_data = []
+   fo_logs = defaultdict(lambda:[])
+   for run in range(runs):
+      temp_player=player.ClonePlayer()
+      random.seed(random_seed_sequence[run])
+      np.random.seed(seed=random_seed_sequence[run])
+      temp_player.chooseAction(state)
+      data = tree_data(temp_player, divisions, dimension, early_cut)
+      data.insert(0,"run",[run for _ in range(len(data))])
+      collective_data.append(data)
+      trt = False
+      terminal_count = sum([1 for k,n in temp_player.nodes_dict.items() if n.untried_moves==[] and n.child ==[]])
+      if terminal_count >= 1:
+         trt = True
+      fo_logs["Player"].append(temp_player.name)
+      fo_logs["Tree_Nodes"].append(len(temp_player.nodes_dict))
+      fo_logs["Max_Visits_Path"].append(function(best_tree_path(temp_player.nodes_dict[0],"visits").state.eval_point()))
+      fo_logs["Max_Reward_Path"].append(function(best_tree_path(temp_player.nodes_dict[0]).state.eval_point()))
+      fo_logs["Tree_Reaches_Terminal"].append(trt)
+      fo_logs["Terminals_Reached"].append(terminal_count)
+      fo_logs["Random_Seed"].append(random_seed_sequence[run])
+   df_data = pd.concat(collective_data)
+   fo_logs = pd.DataFrame(fo_logs)
+   return fo_logs, df_data
+
+def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", exp_names=None):
+    """
+    Collects data in "collective_tree_logs.csv".
+    Logs names should be saved as "logs_path/Results_f0_c0.5" where f is the function, c is the parameter
+    Logs in that folder should contain "Final_Player_logs.csv" and "Parameter_logs.csv"
+    """
+        
+    if exp_names is None:
+        exp_names = [ item for item in os.listdir(logs_path) if os.path.isdir(os.path.join(logs_path, item)) ]
+    join = "/"
+    final_df = pd.DataFrame()
+    for i,exp_name in enumerate(exp_names):
+        data = pd.read_csv(logs_path + join + exp_name + join + "Final_Player_logs.csv")
+        pars = pd.read_csv(logs_path + join + exp_name + join + "Parameter_logs.csv")
+        fi_list = [pars["func_index"][0] for _ in range(len(data))]
+        c_list = [pars["c_param"][0] for _ in range(len(data))]
+        expname_list = [exp_name for _ in range(len(data))]
+        data["function"] = fi_list
+        data["c"] = c_list
+        data["expname"] = expname_list
+        if i==0:
+            final_df = pd.DataFrame(data)
+        else:
+            final_df = pd.concat([final_df,data]) 
+    
+    final_df.to_csv(logs_path + join + output_name, index=False)
+
+
+
+#### Graph generation
+
 def show_search(data_list, function, title, divisions, n_buckets = 100, type="divisions"):
    if divisions in [2,3]: colors = ["#5e4e9c","#4169b0","#009ee3"]
    if divisions==4: colors = ["#cf0000","#a2000d","#740017","#53001b"]
@@ -952,58 +1011,99 @@ def show_2d_search(data_list, function, title, divisions, n_buckets = 100):
    #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
    fig.show()
 
-def multiple_runs(state, function, player, runs, random_seed, divisions, dimension=0, division_method = "percentage", early_cut=False):
-   random.seed(random_seed)
-   random_seed_sequence = [random.randint(0,1000000) for _ in range(runs)]
-   collective_data = []
-   fo_logs = defaultdict(lambda:[])
-   for run in range(runs):
-      temp_player=player.ClonePlayer()
-      random.seed(random_seed_sequence[run])
-      np.random.seed(seed=random_seed_sequence[run])
-      temp_player.chooseAction(state)
-      data = tree_data(temp_player, divisions, dimension, early_cut)
-      data.insert(0,"run",[run for _ in range(len(data))])
-      collective_data.append(data)
-      trt = False
-      terminal_count = sum([1 for k,n in temp_player.nodes_dict.items() if n.untried_moves==[] and n.child ==[]])
-      if terminal_count >= 1:
-         trt = True
-      fo_logs["Player"].append(temp_player.name)
-      fo_logs["Tree_Nodes"].append(len(temp_player.nodes_dict))
-      fo_logs["Max_Visits_Path"].append(function(best_tree_path(temp_player.nodes_dict[0],"visits").state.eval_point()))
-      fo_logs["Max_Reward_Path"].append(function(best_tree_path(temp_player.nodes_dict[0]).state.eval_point()))
-      fo_logs["Tree_Reaches_Terminal"].append(trt)
-      fo_logs["Terminals_Reached"].append(terminal_count)
-      fo_logs["Random_Seed"].append(random_seed_sequence[run])
-   df_data = pd.concat(collective_data)
-   fo_logs = pd.DataFrame(fo_logs)
-   return fo_logs, df_data
-
-def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", exp_names=None):
-    """
-    Collects data in "collective_tree_logs.csv".
-    Logs names should be saved as "logs_path/Results_f0_c0.5" where f is the function, c is the parameter
-    Logs in that folder should contain "Final_Player_logs.csv" and "Parameter_logs.csv"
-    """
-        
-    if exp_names is None:
-        exp_names = [ item for item in os.listdir(logs_path) if os.path.isdir(os.path.join(logs_path, item)) ]
-    join = "/"
-    final_df = pd.DataFrame()
-    for i,exp_name in enumerate(exp_names):
-        data = pd.read_csv(logs_path + join + exp_name + join + "Final_Player_logs.csv")
-        pars = pd.read_csv(logs_path + join + exp_name + join + "Parameter_logs.csv")
-        fi_list = [pars["func_index"][0] for _ in range(len(data))]
-        c_list = [pars["c_param"][0] for _ in range(len(data))]
-        expname_list = [exp_name for _ in range(len(data))]
-        data["function"] = fi_list
-        data["c"] = c_list
-        data["expname"] = expname_list
-        if i==0:
-            final_df = pd.DataFrame(data)
-        else:
-            final_df = pd.concat([final_df,data]) 
+def fo_function_analysis(fo_state, max_depth=3):
+   """
+    Plots MCTS's fitness landscape for a 1d function
     
-    final_df.to_csv(logs_path + join + output_name, index=False)
+    Usage example:
+    random_player = RandomPlayer()
+    dummy_state = FunctionOptimisationState(players=[random_player], function=4, ranges=[[0,1]], splits=2)
+    functions = dummy_state.function_list
+    fig = fo_function_analysis(dummy_state, max_depth=5)
+    fig.show()
+   """
 
+    #Initialize
+   stop = fo_state.ranges[0][1]
+   start = fo_state.ranges[0][0]
+
+   #get max depth and step size
+   step = fo_state.ranges[0][1] - fo_state.ranges[0][0]
+   depth = 0
+   while step > fo_state.minimum_step:
+      depth += 1
+      step = step / fo_state.splits
+      if depth>1000:
+         print("Infinite while error")
+         break
+   
+   #Calculations
+   values_by_depth = {}
+   x = np.linspace(start,stop,int((stop-start)/step))
+   x=x[1:-1]
+   y_dict = {xi:fo_state.function([xi]) for xi in x}
+   for d in range(1,max_depth+1):
+      divisions = fo_state.splits**d
+      division_size = (stop-start)/divisions
+      for i in range(divisions):
+         section_begin = division_size*i
+         section_end = division_size*(i+1)
+         values = []
+         for (k,v) in y_dict.items():
+            if k > section_begin and k < section_end:
+               values.append(v)
+         values_by_depth[(d,i)] = stats.mean(values)
+   #print(values_by_depth)
+
+   #create subplots
+   n_plots = max_depth
+   even_spaces = 1/(n_plots+1)
+   row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
+   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.03,row_heights=row_heights, specs=[[{"secondary_y": True}] for _ in range(n_plots+1)])
+   
+   #add function plot
+   x = np.linspace(0.001,1,5000)
+   y = [fo_state.function([i]) for i in x]
+   fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=1,col=1)
+   
+
+   #add analysis plots
+   for d in range(1,max_depth+1):
+      x = np.linspace(start,stop,((fo_state.splits**(d))*2)+1)
+      x = [x[i] for i in range(1,len(x)) if i%2]
+      #print(x)
+      valid_keys = [k for k in values_by_depth.keys() if k[0] == d]
+      y = [values_by_depth[k] for k in valid_keys]
+      fig.add_trace(go.Bar(x=x, y=y, showlegend=False,marker_color="black"),row=d+1,col=1)
+      fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color='royalblue', width=2, dash='dash'),showlegend=False,marker={"color":"blue"}),row=d+1,col=1)
+
+      #add vertical lines
+      if d > 1:
+         x_breaks = np.linspace(start,stop,fo_state.splits**(d-1)+1)
+         x_breaks = x_breaks[1:-1]
+         for x_break in x_breaks:
+            fig.add_trace(go.Scatter(x=[x_break,x_break], y=[0,1], showlegend=False,marker={"color":"black"}),row=d+1,col=1)
+
+   #update fig layout
+   fig.update_layout(barmode='stack')
+   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20),width=800,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text":"Function analysis"}
+                ,legend=dict(
+                    #title = "Formula",
+                    #orientation="h",
+                    #yanchor="top",
+                    y=-0.65,
+                    xanchor="center",
+                    x=0.5,  
+                    font = dict(family = "Arial", size = 14, color = "black"),
+                    #bordercolor="LightSteelBlue",
+                    borderwidth=2,
+                    itemsizing='trace',
+                    itemwidth = 30
+                    )  )
+   #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
+   fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   # fig.update_xaxes(range=[start,stop])
+   fig.update_xaxes(range=[0,1])
+   fig.update_yaxes(range=[0,1])
+   return fig
