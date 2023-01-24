@@ -1107,3 +1107,204 @@ def fo_function_analysis(fo_state, max_depth=3):
    fig.update_xaxes(range=[0,1])
    fig.update_yaxes(range=[0,1])
    return fig
+
+def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
+   """Returns a figure with a 2d histogram plotting the function landscape as MCTS will se it. Manual (Fast)
+    Usage example:
+    random_player = RandomPlayer()
+    dummy_state = FunctionOptimisationState(players=[random_player], function=6, ranges=[[0,1],[0,1]], minimum_step=0.001, splits=3)
+    fig = exps.fo_function_analysis_2d(dummy_state, print_logs=True, max_depth=4)
+    fig.show()
+   """
+
+   #Find evaluation points
+   stop = {}
+   start = {}
+   max_depth_step = {}
+   x = {}
+   division_size = {}
+   dimensions = len(fo_state.ranges)
+
+   #splits by dimension
+   for d in range(dimensions):
+      
+      stop[d] = fo_state.ranges[d][1]
+      start[d] = fo_state.ranges[d][0]
+      max_depth_step[d] = (stop[d]-start[d])/(fo_state.splits**max_depth)
+      division_size[d] = stop[d] - start[d]
+      while division_size[d] > fo_state.minimum_step:
+         division_size[d] = division_size[d]/fo_state.splits   
+      #if print_logs: print("dimension", d, " division_size", division_size[d], "start", start[d], "stop", stop[d], "max_detph_step", max_depth_step[d])
+
+      #get central points
+      x[d] = []   
+      next_start = start[d]
+      center_distance = division_size[d]/2
+      while next_start+center_distance < stop[d]:
+         next_stop = next_start + division_size[d]
+         x[d].append(next_start+center_distance) #gets the value in the middle
+         next_start = next_stop
+      #if print_logs: print("x", x[d])
+   #if print_logs: print("max_depth_step", max_depth_step)
+
+
+   fig_x = {}
+   fig_y = {}
+   fig_z = {}
+   for current_depth in reversed([md+1 for md in range(max_depth)]):
+      depth_step = {}
+      for d in range(dimensions):
+         depth_step[d] = (stop[d]-start[d])/(fo_state.splits**current_depth)
+      #if print_logs: print("current_depth", current_depth, "depth_step", depth_step)
+
+      if max_depth == current_depth:
+         granular_x = x[0]
+         granular_y = x[1]
+      else:
+         granular_x = fig_x[current_depth+1]
+         granular_y = fig_y[current_depth+1]
+         granular_z = {}
+         for i in range(len(granular_x)):
+            granular_z[(granular_x[i], granular_y[i])] = fig_z[current_depth+1][i]
+
+      all_depth_steps = {}
+      for d in range(dimensions):
+         all_depth_steps[d] = [[i*depth_step[d], (i+0.5)*depth_step[d], (i+1)*depth_step[d]] for i in range(fo_state.splits**current_depth)]
+         all_depth_steps[d][0][0] = start[d]
+         all_depth_steps[d][-1][2] = stop[d]
+      #if print_logs: print("all_depth_steps shape:", str([str(k)+":"+str(len(v)) for k,v in all_depth_steps.items()]))
+      #if print_logs: print("all_depth_steps max:", str(max([max(v) for k,v in all_depth_steps.items()])), str(min([min(v) for k,v in all_depth_steps.items()])))
+
+      avg_by_y={}
+      for j in granular_y:
+         avg_by_y[j] = {}
+         steps = 0
+         count = 0
+         accum = 0
+         for i in granular_x:
+            #if print_logs: print("i", i, "steps", steps)
+            if i > all_depth_steps[0][steps][2]:
+               avg_by_y[j][all_depth_steps[0][steps][1]] = accum/count
+               count = 0
+               accum = 0
+               steps += 1
+            if max_depth == current_depth:
+               accum = accum + fo_state.function([i,j])
+            else:
+               accum = accum + granular_z[(i,j)]
+            count += 1
+         #if print_logs: print("i", i, "steps", steps)
+         avg_by_y[j][all_depth_steps[0][steps][1]] = accum/count
+         all_x_keys = avg_by_y[j].keys()
+      #if print_logs: print("avg_by_y", avg_by_y)
+      #if print_logs: print("all_x_keys", all_x_keys)
+
+      fig_x[current_depth]=[]
+      fig_y[current_depth]=[]
+      fig_z[current_depth]=[]
+      for i in all_x_keys:
+         steps = 0
+         count = 0
+         accum = 0
+         for j in avg_by_y.keys():
+            if j > all_depth_steps[1][steps][2]:
+               fig_x[current_depth].append(i)
+               fig_y[current_depth].append(all_depth_steps[1][steps][1])
+               fig_z[current_depth].append(accum/count)
+               count = 0
+               accum = 0
+               steps += 1
+            accum = accum + avg_by_y[j][i]
+            count += 1
+         fig_x[current_depth].append(i)
+         fig_y[current_depth].append(all_depth_steps[1][steps][1])
+         fig_z[current_depth].append(accum/count)
+
+
+   #create subplots
+   plot_pixels = 150
+   n_plots = max_depth
+   """
+   if n_plots%2==0:
+      row_heights = [1/(n_plots/2) for _ in range(int(n_plots/2))]
+      column_widths = [0.5, 0.5]
+   else:
+   """
+   row_heights = [1/n_plots for _ in range(n_plots)]
+   column_widths = [1]
+   #if print_logs: 
+   #   print(row_heights, column_widths)
+   #   print("rows",len(row_heights),"cols",len(column_widths))
+   fig = make_subplots(
+      rows=len(row_heights)
+      ,cols=len(column_widths)
+      ,shared_xaxes=True
+      ,vertical_spacing=0.03
+      ,row_heights = row_heights
+      ,column_widths = column_widths
+      #,specs=[[{"secondary_y": True}] for _ in range(len(column_widths))]
+      )
+   
+   #add function plot
+   #x = np.linspace(0.001,1,5000)
+   #y = [fo_state.function([i]) for i in x]
+   #fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=1,col=1)
+   
+
+   #add analysis plots
+   n_ticks_colorbar = [0,3,0,0,0,0,0,0,0,0,0,0]
+   for d in range(1,max_depth+1):
+      if d==1: show_legend = True
+      else: show_legend = False
+      #print("n_bins", str(fo_state.splits**d))
+      #if print_logs:
+         #print("fig_x[d]", fig_x[d])
+         #print("fig_y[d]", fig_y[d])
+         #print("fig_z[d]", fig_z[d])
+         #print("nbinsx",str(fo_state.splits**d))
+      fig.add_trace(
+         go.Histogram2d(x=fig_x[d], y=fig_y[d], z=fig_z[d],histfunc ="avg"
+            #,autobinx =False
+            #,nbinsx=5
+            ,xbins = {"size":(stop[0]-start[0])/fo_state.splits**d}
+            ,ybins = {"size":(stop[1]-start[1])/fo_state.splits**d}
+            #,nbinsy=fo_state.splits**d
+            #,color_continuous_scale="gray"
+            ,colorscale = [[0, 'rgb(235,235,235)'], [1, 'rgb(0,0,0)']]
+            ,showlegend = False
+            ,colorbar = {"nticks":n_ticks_colorbar[d]}
+            #,texttemplate= "%{z}"
+            )
+         ,row=d,col=1)
+      #fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color='royalblue', width=2, dash='dash'),showlegend=False,marker={"color":"blue"}),row=d+1,col=1)
+
+   #update fig layout
+   #fig.update_layout(barmode='stack')
+   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20)
+      ,width=plot_pixels+100
+      ,height=plot_pixels*n_plots
+      ,autosize=False
+      ,plot_bgcolor='rgba(0,0,0,0)',title={"text":"2D Function analysis"}
+                #,legend=dict(
+                    #title = "Formula",
+                    #orientation="h",
+                    #yanchor="top",
+                    #y=-0.65,
+                    #xanchor="center",
+                    #x=0.5,  
+                    #font = dict(family = "Arial", size = 14, color = "black"),
+                    #bordercolor="LightSteelBlue",
+                    #borderwidth=2,
+                    #itemsizing='trace',
+                    #itemwidth = 30
+                    #)  
+                    )
+   #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
+   #fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   #fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   # fig.update_xaxes(range=[start,stop])
+   fig.update_xaxes(range=[start[0],stop[0]])
+   fig.update_yaxes(range=[start[1],stop[1]])
+   
+
+   return fig
