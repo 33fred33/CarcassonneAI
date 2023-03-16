@@ -25,6 +25,7 @@ class FunctionOptimisationState:
       # assignation
       self.players = players
       self.function = function
+      self.function_index = function
       if isinstance(self.function, int):
          def f0(x):
             """Unimodal, centered"""
@@ -55,6 +56,7 @@ class FunctionOptimisationState:
             return 0.5+((math.sin(math.sqrt(x[0]**2+x[1]**2))**2-0.5)/((1+0.001*(x[0]**2+x[1]**2))**2))
          self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7]
          self.function = self.function_list[function]
+         self.max_x = [0.5,0.867,None,0.1,0.1]
       self.ranges = ranges
       self.splits = splits
       self.minimum_step = minimum_step

@@ -927,34 +927,43 @@ def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", 
 
 #### Graph generation
 
-def show_search(data_list, function, title, divisions, n_buckets = 100, type="divisions"):
-   if divisions in [2,3]: colors = ["#5e4e9c","#4169b0","#009ee3"]
-   if divisions==4: colors = ["#cf0000","#a2000d","#740017","#53001b"]
-   n_plots = len(data_list)
-   even_spaces = 1/(n_plots+1)
-   row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
-   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.05,row_heights=row_heights)
+def plot_functions(function_list, subplot_titles=None):
+    n_plots = len(function_list)
+    even_spaces = 1/(n_plots)
+    row_heights = [even_spaces for _ in range(n_plots)]
+    if subplot_titles is None:
+        sub_titles = ["Function " + str(i+1) for i in range(len(function_list))]
+    line_width = 1.5
+    fig = make_subplots(rows=n_plots, cols=1,shared_xaxes=True,vertical_spacing=0.05,row_heights=row_heights, subplot_titles=sub_titles)
+    #,subplot_titles=("Function 1","Function 2","Function 3","Function 4","Function 5"))
 
-   show_legend = [False] + [False for _ in range(n_plots)]
-   for i,data in enumerate(data_list):
-      for div in range(divisions):
-         if div%divisions == 0: s1 = "{:2.0f}".format(100*(div/divisions))
-         else: s1 = "{:2.1f}".format(100*(div/divisions))
-         if (div+1)%divisions == 0: s2 = "{:2.0f}".format(100*((div+1)/divisions))
-         else: s2 = "{:2.1f}".format(100*((div+1)/divisions))
-
-         div_name = s1 + "% to " + s2 + "%"
-         temp_data = data.loc[data["id_block"]==div]
-         fig.append_trace(go.Histogram(x=temp_data.x, nbinsx=n_buckets, xbins={"start":0,"end":1,"size":1/n_buckets}, legendgroup=div, name=div_name, showlegend=show_legend[i], marker={"color":colors[div]}),row=i+1,col=1)
-         
-
-   fig.update_layout(barmode='stack')
-   x = np.linspace(0.001,1,5000)
-   y = [function([i]) for i in x]
-   fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=n_plots+1,col=1)
-   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20),width=1000,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text":title}
+    show_legend = [False] + [False for _ in range(n_plots)]
+    max_x = [0.5,0.867,0,0.1,0.1]
+    for i,f in enumerate(function_list):
+        x = np.linspace(0.001,1,5000)
+        y = [f([i]) for i in x]
+        fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=i+1,col=1)
+        fig.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+        fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+        fig.update_xaxes(range=[0, 1])
+        fig.update_yaxes(range=[0, 1])
+        #fig.add_vline(x=max_x[i],line_dash="dot")
+    fig['layout'].update(shapes=[{'type': 'line','y0':0,'y1': 1,'x0':0.5, 
+                                'x1':0.5,'xref':'x1','yref':'y1',
+                                'line': {'color': "#B10909",'width': line_width, "dash":"dash"}},
+                                {'type': 'line','y0':0,'y1': 1,'x0':0.867, 
+                                'x1':0.867,'xref':'x2','yref':'y2',
+                                'line': {'color': "#B10909",'width': line_width, "dash":"dash"}},
+                                {'type': 'line','y0':0,'y1': 1,'x0':0.1, 
+                                'x1':0.1,'xref':'x4','yref':'y4',
+                                'line': {'color': "#B10909",'width': line_width, "dash":"dash"}},
+                                {'type': 'line','y0':0,'y1': 1,'x0':0.1, 
+                                'x1':0.1,'xref':'x5','yref':'y5',
+                                'line': {'color': "#B10909",'width': line_width, "dash":"dash"}}])
+    fig.update_layout(margin=dict(l=10, r=10, t=10, b=20),width=800,height=800,plot_bgcolor='rgba(0,0,0,0)'
+                    #,title={"text":title}
+                    ,font = dict(family = "Arial", size = 14, color = "black")
                 ,legend=dict(
-                    #title = "Formula",
                     #orientation="h",
                     #yanchor="top",
                     y=-0.65,
@@ -966,11 +975,237 @@ def show_search(data_list, function, title, divisions, n_buckets = 100, type="di
                     itemsizing='trace',
                     itemwidth = 30
                     )  )
-   fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
-   #fig.show()
+    #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
+    fname_x = -0.08
+    fname_y_span = 0.225
+    fname_initial_y = 1
+    fname_size = 30
+    fname_names = ["f1","f2","f3","f4","f5"]
+    """
+    for i,f_name in enumerate(fname_names):
+    fig.add_annotation(
+            x=fname_x,
+            y=fname_initial_y-i*fname_y_span,
+            xref="paper",
+            yref="paper",
+            text=" "+f_name+" ",
+            showarrow=False,
+            font=dict(
+                #family="Courier New, monospace",
+                size=fname_size,
+                color="black"
+                ),
+            align="left",
+            #arrowhead=2,
+            #arrowsize=1,
+            #arrowwidth=2,
+            #arrowcolor="#636363",
+            #ax=20,
+            #ay=-30,
+            bordercolor="black",
+            borderwidth=2,
+            #borderpad=4,
+            #bgcolor="#ff7f0e",
+            #opacity=0.8
+            )
+    """
+    return fig
+
+def show_search(data_list, function, title, divisions, n_buckets = 100, subplot_titles=None, max_x_location = None, y_ref_value = None):
+   """
+   Returns a figure with histogram for each agent
+   Input: Array of dataframes, one for each agent.
+
+   Usage example:
+   
+   def get_subset(data, agent_name, f_index, c_param=None):
+      temp_data = data.loc[data["f_index"]==f_index]
+      if c_param is not None:
+         temp_data = temp_data.loc[temp_data["c_param"]==c_param]
+      #print(temp_data["player"].unique())
+      temp_data = temp_data.loc[temp_data["player"] == agent_name]
+      return temp_data
+
+   dummy_state = FunctionOptimisationState(players=[None], function=0, ranges=[[0,1]], splits=2)
+   functions = dummy_state.function_list
+   join = "/"
+   logs_path = "logs/Old/FO"
+   data = pd.read_csv(logs_path + join + "collective_tree_logs.csv")
+   n_buckets = 128
+   f_max_locations = [0.5,0.867,None,0.1,0.1]
+
+   for f_index in [0]:#,1,2,3,4]:
+      agents_names = data["player"].unique()
+      print(agents_names)
+      c_params = data["c_param"].unique()
+      c_params.sort()
+      generic_name = "MCTS_c"
+      agents_names = [x for x in agents_names]
+      names = []
+      data_list = []
+
+      #order names
+      for c in c_params:
+         string_c = str(c)
+         if string_c.split(".")[-1] == "0":
+               string_c = string_c[:-2]
+         names.append(generic_name + string_c)
+      for name in agents_names:
+         if "SE_MCTS" in name:
+               names.append(name)
+      for name in names:
+         temp_data = get_subset(data, name, f_index)
+         data_list.append(temp_data)
+      
+      treated_names = []
+      for it,st in enumerate(names):
+         new_string = st.replace("_c"," C = ")
+         new_string = new_string.replace("1.414","\u221A\u03052\u0305fred")
+         new_string = new_string.split("fred")[0]
+         if "SE_MCTS" in new_string:
+               if "2600" in new_string:
+                  new_string = "SIEA_MCTS 2600 iterations"
+               else:
+                  new_string = "SIEA_MCTS 5000 iterations"
+         treated_names.append(new_string)
+      #plot = exps.show_search(data_list, functions[f_index], "", 3, n_buckets = n_buckets, subplot_titles = treated_names+["Function "+str(f_index+1)], max_x_location=f_max_locations[f_index], y_ref_value=None)
+      plot = nshow_search(data_list, functions[f_index], "Exploration and exploitation distribution for Function " + str(f_index+1) + "." , 3, n_buckets = n_buckets, subplot_titles = ["Function "+str(f_index+1)] + treated_names, max_x_location=f_max_locations[f_index], y_ref_value=None)
+      plot.write_image(os.path.join(logs_path, "F" + str(f_index+1) + "_results"+ str(n_buckets) + '.png'))#, width=800, height=800)
+      plot.show()
+   
+   """ 
+
+   if divisions in [2,3]: colors = ["#5B8C5A"
+                ,"#56638A"
+                , "#EC7316"]#["#355691","#C874D9","#820263"   ]#["#696969","#4f4f4f","#2f2f2f"]
+   if divisions==4: colors = ["#cf0000","#a2000d","#740017","#53001b"]
+   #colors = ["#1F77B4","#7FBF7B","#7B6F9D","#F5E050","#4CB5B0"]
+   n_plots = len(data_list)
+   even_spaces = 1/(n_plots+1)
+   row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
+   fig = make_subplots(rows=n_plots+1
+                       ,cols=1
+                       ,shared_xaxes=True
+                       ,vertical_spacing=0.04
+                       ,row_heights=row_heights
+                       ,subplot_titles = subplot_titles
+                       , specs=[[{"secondary_y": True}] for _ in range(n_plots+1)]
+                       ,x_title="Central point of the state represented by each node."
+                       ,y_title='Total allocated nodes.'
+                       #,print_grid=True
+                       )
+   
+   if function is not None:
+      x = np.linspace(0.001,1,5000)
+      y = [function([i]) for i in x]
+      fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"#000000"}),row=1,col=1)
+
+   show_legend = [True] + [False for _ in range(n_plots)]
+   for i,data in enumerate(data_list):
+      for div in range(divisions):
+
+         #Set name of the divisions
+         if div%divisions == 0: s1 = "{:2.0f}".format(100*(div/divisions))
+         else: s1 = "{:2.1f}".format(100*(div/divisions))
+         if (div+1)%divisions == 0: s2 = "{:2.0f}".format(100*((div+1)/divisions))
+         else: s2 = "{:2.1f}".format(100*((div+1)/divisions))
+         div_name = s1 + "% to " + s2 + "%"
+         temp_data = data.loc[data["id_block"]==div]
+         
+         #Set number of buckets as per arguments
+         if type(n_buckets) is list:
+            if i < len(n_buckets):
+                n_bins = n_buckets[i]
+            else: print("reached i ", i, " when max is ", str(len(n_buckets)))
+         else: n_bins = n_buckets
+
+         #Add histogram
+         fig.add_trace(go.Histogram(x=temp_data.x
+                  , nbinsx=n_bins
+                  , xbins={"start":0,"end":1,"size":1/n_bins}
+                  , name = div_name
+                  , showlegend=show_legend[i]
+                  , marker={"color":colors[div]}),row=i+2,col=1
+                  #, legendgroup=div, name=div_name
+                  )
+         
+         #Add secondary trace in the same plot
+         #fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=i+1,col=1,secondary_y=True)
+
+   fig.update_layout(margin=dict(l=70, r=10, t=30, b=50)
+                     ,width=800
+                     ,height=900
+                     ,plot_bgcolor='rgba(0,0,0,0)'
+                     ,title={"text":title}
+                     ,barmode='stack'
+                     ,font = dict(family = "Arial", size = 14, color = "black")
+                     ,legend=dict(
+                        title = "Total iterations"
+                        ,orientation="v"
+                        ,yanchor="top"
+                        ,y=1.14
+                        ,xanchor="right"
+                        ,x=0.97
+                        ,bgcolor="rgba(255, 255, 255, 0.8)"
+                        ,font = dict(family = "Arial", size = 14, color = "black")
+                        ,bordercolor="Black"
+                        ,borderwidth=2
+                        ,itemsizing='trace'
+                        ,itemwidth = 30
+                        ) 
+                     )
+   fig.update_xaxes(showline=True
+                    , linewidth=2
+                    , linecolor='black'
+                    , mirror=True
+                    )
+
+   fig.update_yaxes(showline=True
+                    ,mirror=True
+                    , linewidth=2
+                    , linecolor='black'
+                    , nticks=5
+                    #,tickmode = 'linear'
+                    ,tick0 = 0
+                    , gridcolor="#5B8C5A"
+                    , gridwidth=0.1
+                    #, dtick=5000
+                    ,showgrid=False
+                    )
+
+   #Add line where the maximum x is
+   list_of_shapes = []
+   if max_x_location is not None:
+      for subplot_n in range(1,n_plots+2):
+         yref = "y" + str(subplot_n*2)
+         list_of_shapes.append({'type': 'line','y0':0,'y1': 1,'x0':max_x_location, 
+                                    'x1':max_x_location,'xref':"x",'yref':yref,
+                                    'line': {'color': "#B10909",'width': 1.5, "dash":"dash"}})
+   
+   if y_ref_value is not None:
+         for subplot_n in range(1,n_plots+1):
+            yref = "y" + str(subplot_n*2-1)
+            list_of_shapes.append({'type': 'line','y0':y_ref_value,'y1': y_ref_value,'x0':0, 
+                                       'x1':1,'xref':"x",'yref':yref,
+                                       'line': {'color': "#4F5D2F",'width': 1, "dash":"dash"}})
+   
+   if list_of_shapes != []:
+      fig['layout'].update(shapes=list_of_shapes)
+      for subplot_n in range(1, n_plots+2):
+         yref = "y" + str(subplot_n)
+         fig.add_shape(go.layout.Shape(type="line", yref=yref, xref="x", x0=max_x_location, x1 = max_x_location, y0=0, y1=1, line=dict(color="red", width=1),),row=subplot_n, col=1)
+   
+   for subplot_n in range(1,n_plots+2):
+         fig['layout']['yaxis'+ str(subplot_n*2)]['visible'] = False
+
    return fig
 
 def show_2d_search(data_list, function, title, divisions, n_buckets = 100):
+   #Needs verification
+   """
+   Generates a 2d histogrem, where each row is a moment in the search. To show where the search was performed at which time
+   """
+   
    colors = ["#5e4e9c","#4169b0","#009ee3"]
    n_plots = len(data_list)
    even_spaces = 1/(n_plots+1)
@@ -1011,7 +1246,7 @@ def show_2d_search(data_list, function, title, divisions, n_buckets = 100):
    #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
    fig.show()
 
-def fo_function_analysis(fo_state, max_depth=3):
+def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
    """
     Plots MCTS's fitness landscape for a 1d function
     
@@ -1038,11 +1273,13 @@ def fo_function_analysis(fo_state, max_depth=3):
          break
    
    #Calculations
+   bar_widths= []
    values_by_depth = {}
    x = np.linspace(start,stop,int((stop-start)/step))
    x=x[1:-1]
    y_dict = {xi:fo_state.function([xi]) for xi in x}
    for d in range(1,max_depth+1):
+      bar_widths.append([1/(fo_state.splits**d) for _ in range(fo_state.splits**d)])
       divisions = fo_state.splits**d
       division_size = (stop-start)/divisions
       for i in range(divisions):
@@ -1053,13 +1290,14 @@ def fo_function_analysis(fo_state, max_depth=3):
             if k > section_begin and k < section_end:
                values.append(v)
          values_by_depth[(d,i)] = stats.mean(values)
-   #print(values_by_depth)
+   #print(bar_widths)
 
    #create subplots
    n_plots = max_depth
    even_spaces = 1/(n_plots+1)
    row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
-   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.03,row_heights=row_heights, specs=[[{"secondary_y": True}] for _ in range(n_plots+1)])
+   sub_titles = ["Function "+ str(fo_state.function_index)] + ["Tree depth " + str(i+1) for i in range(max_depth)]
+   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.03,row_heights=row_heights, specs=[[{"secondary_y": True}] for _ in range(n_plots+1)], subplot_titles=sub_titles)
    
    #add function plot
    x = np.linspace(0.001,1,5000)
@@ -1069,13 +1307,31 @@ def fo_function_analysis(fo_state, max_depth=3):
 
    #add analysis plots
    for d in range(1,max_depth+1):
+      widths = bar_widths[d-1]
       x = np.linspace(start,stop,((fo_state.splits**(d))*2)+1)
       x = [x[i] for i in range(1,len(x)) if i%2]
       #print(x)
+      x=np.cumsum(widths)-widths
+      #print(x)
       valid_keys = [k for k in values_by_depth.keys() if k[0] == d]
       y = [values_by_depth[k] for k in valid_keys]
-      fig.add_trace(go.Bar(x=x, y=y, showlegend=False,marker_color="black"),row=d+1,col=1)
-      fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color='royalblue', width=2, dash='dash'),showlegend=False,marker={"color":"blue"}),row=d+1,col=1)
+
+      #Find max and change color
+      max_y=max(y)
+      colors = ["#5B8C5A" for _ in range(len(y))]
+      for i, y_i in enumerate(y):
+         if abs(max_y-y_i) < 0.0001:
+            colors[i] = "#56638A"
+
+      fig.add_trace(go.Bar(x=x
+                           , y=y
+                           , showlegend=False
+                           ,marker_color=colors
+                           ,width=widths
+                           ,offset=0
+                           )
+                        ,row=d+1,col=1)
+      fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color="#56638A", width=2, dash='dash'),showlegend=False,marker={"color":"#56638A"}),row=d+1,col=1)
 
       #add vertical lines
       if d > 1:
@@ -1083,10 +1339,11 @@ def fo_function_analysis(fo_state, max_depth=3):
          x_breaks = x_breaks[1:-1]
          for x_break in x_breaks:
             fig.add_trace(go.Scatter(x=[x_break,x_break], y=[0,1], showlegend=False,marker={"color":"black"}),row=d+1,col=1)
+            pass
 
    #update fig layout
    fig.update_layout(barmode='stack')
-   fig.update_layout(margin=dict(l=10, r=10, t=30, b=20),width=800,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text":"Function analysis"}
+   fig.update_layout(margin=dict(l=10, r=10, t=35, b=20),width=800,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text": title},font = dict(family = "Arial", size = 14, color = "black")
                 ,legend=dict(
                     #title = "Formula",
                     #orientation="h",
@@ -1106,6 +1363,10 @@ def fo_function_analysis(fo_state, max_depth=3):
    # fig.update_xaxes(range=[start,stop])
    fig.update_xaxes(range=[0,1])
    fig.update_yaxes(range=[0,1])
+   if max_val is not None:
+         fig.add_shape({'type': 'line','y0':0,'y1': 1,'x0':max_val, 
+                        'x1':max_val,
+                        'line': {'color': "#B10909",'width': 1.5, "dash":"dash"}}, row="all", col=1)
    return fig
 
 def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
