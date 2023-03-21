@@ -50,11 +50,14 @@ class FunctionOptimisationState:
             return (x[0] + x[1])/2
          def f6(x):
             """Deceptive, search traps"""
-            return ((0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80))*((0.5*x[1])+(-0.7*x[1]+1)*pow(math.sin(5*math.pi*x[1]),80))
+            return ((0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),4))*((0.5*x[1])+(-0.7*x[1]+1)*pow(math.sin(5*math.pi*x[1]),4))
          def f7(x):
             """Deceptive, search traps"""
+            return ((0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80))*((0.5*x[1])+(-0.7*x[1]+1)*pow(math.sin(5*math.pi*x[1]),80))
+         def f8(x):
+            """Deceptive, search traps"""
             return 0.5+((math.sin(math.sqrt(x[0]**2+x[1]**2))**2-0.5)/((1+0.001*(x[0]**2+x[1]**2))**2))
-         self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7]
+         self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7,f8]
          self.function = self.function_list[function]
          self.max_x = [0.5,0.867,None,0.1,0.1]
       self.ranges = ranges

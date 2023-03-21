@@ -1246,6 +1246,200 @@ def show_2d_search(data_list, function, title, divisions, n_buckets = 100):
    #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='black')
    fig.show()
 
+def show_search_depth(data_list, plot_title, data_distance = 20, markers_distance = 20, gray_scale=False):
+   """
+   Plots the average depth of the expanded node at each iteration
+
+   Usage example:
+    def get_subset(data, agent_name, f_index, c_param=None):
+        temp_data = data.loc[data["f_index"]==f_index]
+        if c_param is not None:
+            temp_data = temp_data.loc[temp_data["c_param"]==c_param]
+        #print(temp_data["player"].unique())
+        temp_data = temp_data.loc[temp_data["player"] == agent_name]
+        return temp_data
+
+    dummy_state = FunctionOptimisationState(players=[None], function=0, ranges=[[0,1]], splits=2)
+    functions = dummy_state.function_list
+    join = "/"
+    logs_path = "logs/Old/FO"
+    output_name = "collective_tree_logs.csv"
+    data = pd.read_csv(logs_path + join + "collective_tree_logs.csv")
+    n_buckets = 400
+    f_max_locations = [0.5,0.867,None,0.1,0.1]
+
+    for f_index in [0]:#,1,2,3,4]:
+    agents_names = data["player"].unique()
+    #print(agents_names)
+    c_params = data["c_param"].unique()
+    c_params.sort()
+    generic_name = "MCTS_c"
+    agents_names = [x for x in agents_names]
+    names = []
+    data_list = []
+
+    #order names
+    for c in c_params:
+        string_c = str(c)
+        if string_c.split(".")[-1] == "0":
+            string_c = string_c[:-2]
+        names.append(generic_name + string_c)
+    for name in agents_names:
+        if "SE_MCTS" in name:
+            names.append(name)
+    for name in names:
+        temp_data = get_subset(data, name, f_index)
+        data_list.append(temp_data)
+
+    treated_names = []
+    temp_names = [x for x in names]
+    for it,st in enumerate(temp_names):
+        new_string = st.replace("_c"," C = ")
+        new_string = new_string.replace("1.414","sqrt(2)fred")
+        new_string = new_string.split("fred")[0]
+        if "SE_MCTS" in new_string:
+            if "2600" in new_string:
+                new_string = "SE_MCTS partial simulations"
+                #continue
+            else:
+                new_string = "SIEA_MCTS complete simulations"
+        treated_names.append(new_string)
+
+    for i,df in enumerate(data_list):
+        df['player'] = df['player'].replace([names[i]],treated_names[i])
+
+    for i,name in enumerate(treated_names):
+        if name == "SE_MCTS partial simulations":
+            del data_list[i]
+
+    #plot = exps.show_search(data_list, functions[f_index], "", 3, n_buckets = n_buckets, type="divisions")#, subplot_titles = treated_names+["Function "+str(f_index+1)], max_x_location=f_max_locations[f_index], y_ref_value=None)
+    plot = show_search_depth(data_list, "Average expansion depth by iteration. Function " + str(f_index+1), 30, 10)
+    #depth_plot.write_image(os.path.join(logs_path, "depth" + str(f_index) + '.png'), width=600, height=350)
+    #plot = show_search2(data_list, functions[f_index], "", 3, n_buckets = 200, type="divisions", subplot_titles = agents_names+["Function "+str(f_index)])
+    plot.show()
+    #depth_plot.write_image(os.path.join(logs_path, "depth_f" + str(f_index) + '.png'), width=800, height=400)
+    #plot.write_image(os.path.join(logs_path, "depth_histo_max_2k_f" + str(f_index) + '.png'), width=800, height=800)
+    #plot.write_image(os.path.join(logs_path, "Average_depth_by_iteration_f" + str(f_index+1) + '.png'), width=800, height=400)
+   
+   """
+   if gray_scale:
+      colors = ["#696969","#4f4f4f","#2f2f2f","#000000","#0f0f0f","#666666","#234654"]
+   else:
+      colors = ["#000000"
+                , "#B10909"
+                ,  "#5B8C5A"
+                ,"#56638A"
+                , "#EC7316"#"#9B6DC6 "
+                ,  "#FC738C" ]
+
+
+   markers = ["diamond","cross","x","triangle-up","triangle-down","star","star-square","corcle-cross","square", "pentagon"]
+   marker_padding = int(markers_distance/len(data_list))
+
+   fig = go.Figure()
+   max_max_y = 0
+   for data_idx, data in enumerate(data_list):#list(reversed(data_list)):
+      name = data["player"].unique()[0]
+      #if len(name) > 12: name = name[:12]
+      #print(len(data))
+      #temp_data = data.groupby(by="id").mean()
+      #print(len(temp_data))
+      x = data["id"].unique()
+      x = [k for k in x if k%data_distance==0]
+      #y = [stats.mean(data.loc[data["id"]==id,["feature_0"]]["feature_0"]) for id in x]
+      y=[]
+      for id in x:#list(reversed(x)):
+         temp = data.loc[data["id"]==id,["feature_0"]]["feature_0"]
+         #print("filtered_len",len(temp))
+         y.append(stats.mean(temp))
+
+      max_y = max(y)
+      if max_y > max_max_y:
+         max_max_y = max_y
+
+      x_marker = []
+      y_marker = []
+      for count in range(len(x)):
+         if count%(markers_distance+data_idx*marker_padding) == 0:
+            x_marker.append(x[count])
+            y_marker.append(y[count])
+
+      fig.add_trace(go.Scatter(x=x, y=y
+            ,showlegend=False
+            ,name=name
+            ,mode="lines"#+markers'#"markers"
+            ,marker_symbol = markers[data_idx]# + "-open-dot"
+                        #,marker_color = "black"
+                        #,marker_size=9
+                        ,marker=dict(
+                            color=colors[data_idx]#"black",#"red",#'rgba(135, 206, 250, 0.5)',
+                            ,size=9
+                            ,line=dict(
+                                #color='MediumPurple',
+                                width=0.5)
+                            )))#,marker_color = "black"))
+      fig.add_trace(go.Scatter(x=x_marker, y=y_marker
+            ,showlegend=True
+            ,name=name
+            ,mode="markers"#"markers"
+            ,marker_symbol = markers[data_idx]# + "-open-dot"
+                        #,marker_color = "black"
+                        #,marker_size=9
+                        ,marker=dict(
+                            color=colors[data_idx]#"black",#"red",#'rgba(135, 206, 250, 0.5)',
+                            ,size=9
+                            ,line=dict( 
+                                #color='MediumPurple',
+                                width=0.5)
+                            )))#,marker_color = "black"))
+   fig.update_layout(
+                #title_text=title
+                #,title_x=0.5
+                #,title_y=1
+                #xaxis_title="Turn"
+                #,yaxis_title="Nodes"
+                autosize=False
+                ,width=700
+                ,height=350
+                ,plot_bgcolor='rgba(0,0,0,0)'
+                ,legend=dict(
+                    #title = "Formula",
+                    #orientation="h",
+                    #yanchor="top",
+                    y=0,
+                    xanchor="right",
+                    x=1,  
+                    font = dict(family = "Arial", size = 11, color = "black"),
+                    #bordercolor="LightSteelBlue",
+                    borderwidth=2,
+                    itemsizing='trace',
+                    #itemwidth = 30
+                    )
+                ,title={"text":plot_title}
+                )
+   fig["layout"]["yaxis"]["tickmode"] = "linear"
+   fig["layout"]["yaxis"]["tick0"] = 4
+   fig["layout"]["yaxis"]["dtick"] = 2
+   fig["layout"]["yaxis"]["showgrid"] = True
+   fig["layout"]["yaxis"]["gridcolor"] = "black"
+   fig["layout"]["yaxis"]["gridwidth"] = 0.6
+   fig["layout"]["xaxis"]["tickmode"] = "linear"
+   fig["layout"]["xaxis"]["tick0"] = 0
+   fig["layout"]["xaxis"]["dtick"] = 500
+   fig["layout"]["xaxis"]["showgrid"] = True
+   fig["layout"]["xaxis"]["gridcolor"] = "black"
+   fig["layout"]["xaxis"]["gridwidth"] = 0.6
+   fig['layout'].update(margin=dict(
+                                       l=20,
+                                       r=10,
+                                       b=0,
+                                       t=30))    
+   fig.update_xaxes(range=[0,5000])
+   fig.update_yaxes(range=[6,max_max_y])
+   fig.update_xaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True)
+   return fig
+
 def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
    """
     Plots MCTS's fitness landscape for a 1d function
@@ -1569,3 +1763,4 @@ def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
    
 
    return fig
+
