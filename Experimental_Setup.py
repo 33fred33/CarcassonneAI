@@ -1563,7 +1563,7 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
                         'line': {'color': "#B10909",'width': 1.5, "dash":"dash"}}, row="all", col=1)
    return fig
 
-def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
+def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, print_logs=False):
    """Returns a figure with a 2d histogram plotting the function landscape as MCTS will se it. Manual (Fast)
     Usage example:
     random_player = RandomPlayer()
@@ -1579,6 +1579,10 @@ def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
    x = {}
    division_size = {}
    dimensions = len(fo_state.ranges)
+   if minimum_step_limit is not None:
+       minimum_step = minimum_step_limit
+   else:
+       minimum_step = fo_state.minimum_step
 
    #splits by dimension
    for d in range(dimensions):
@@ -1587,7 +1591,7 @@ def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
       start[d] = fo_state.ranges[d][0]
       max_depth_step[d] = (stop[d]-start[d])/(fo_state.splits**max_depth)
       division_size[d] = stop[d] - start[d]
-      while division_size[d] > fo_state.minimum_step:
+      while division_size[d] > minimum_step:
          division_size[d] = division_size[d]/fo_state.splits   
       #if print_logs: print("dimension", d, " division_size", division_size[d], "start", start[d], "stop", stop[d], "max_detph_step", max_depth_step[d])
 
@@ -1764,3 +1768,4 @@ def fo_function_analysis_2d(fo_state, max_depth=3, print_logs=False):
 
    return fig
 
+#### Expeeriments
