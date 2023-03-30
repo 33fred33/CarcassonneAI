@@ -15,7 +15,7 @@ class FunctionOptimisationState:
       self.isGameOver
    """
     
-   def __init__(self, players, function, ranges, splits, minimum_step=0.00001, max_turns=np.inf, split_sequence=None):
+   def __init__(self, players, function, ranges, splits=2, minimum_step=0.00001, max_turns=np.inf, split_sequence=None, for_test=False):
       """
       players: list of player objects (min len: 1, max len: 2)
       function: fitness method (takes a list of len="dimensions" as argument). If is an int, default functions will be used
@@ -26,6 +26,15 @@ class FunctionOptimisationState:
       self.players = players
       self.function = function
       self.function_index = function
+      self.dimensions = len(ranges)
+      self.ranges = ranges
+      self.splits = splits
+      self.minimum_step = minimum_step
+      self.max_turns = max_turns
+      self.name = "FunctionOptimisation"
+      self.for_test = for_test
+
+      #Database
       if isinstance(self.function, int):
          def f0(x):
             """Unimodal, centered"""
@@ -36,7 +45,10 @@ class FunctionOptimisationState:
          def f2(x):
             """Smoothness with levels, paper finnsson"""
             if x[0] < 0.5:
-               return 0.5+0.5*abs(math.sin(1/pow(x[0],5)))
+               if x[0] > 0:
+                  return 0.5+0.5*abs(math.sin(1/pow(x[0],5)))
+               else:
+                  return 0.5+0.5*abs(math.sin(1/0.000001))
             else:
                return 7/20+0.5*abs(math.sin(1/pow(x[0],5)))
          def f3(x):
@@ -47,24 +59,30 @@ class FunctionOptimisationState:
             return (0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80)
          def f5(x):
             """Two variables: smooth"""
-            return (x[0] + x[1])/2
+            return f0([x[0]])*f0([x[1]])
          def f6(x):
             """Deceptive, search traps"""
-            return ((0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),4))*((0.5*x[1])+(-0.7*x[1]+1)*pow(math.sin(5*math.pi*x[1]),4))
+            return f1([x[0]])*f1([x[1]])
          def f7(x):
             """Deceptive, search traps"""
-            return ((0.5*x[0])+(-0.7*x[0]+1)*pow(math.sin(5*math.pi*x[0]),80))*((0.5*x[1])+(-0.7*x[1]+1)*pow(math.sin(5*math.pi*x[1]),80))
+            return f2([x[0]])*f2([x[1]])
          def f8(x):
             """Deceptive, search traps"""
-            return 0.5+((math.sin(math.sqrt(x[0]**2+x[1]**2))**2-0.5)/((1+0.001*(x[0]**2+x[1]**2))**2))
-         self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7,f8]
+            return f3([x[0]])*f3([x[1]])
+         def f9(x):
+            """Deceptive, search traps"""
+            return f4([x[0]])*f4([x[1]])
+         def f10(x):
+            """Deceptive, search traps"""
+            return f3([x[0]])*f1([x[1]])
+         self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]
+         self.max_location_list = [[[0.5]],[[0.867]],[[None]],[[0.1]],[[0.1]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]]]
+         assert (self.dimensions==1 and self.function_index in [0,1,2,3,4]) or (self.dimensions==2 and self.function_index in [5,6,7,8,9])
+
+         #assignation
          self.function = self.function_list[function]
-         self.max_x = [0.5,0.867,None,0.1,0.1]
-      self.ranges = ranges
-      self.splits = splits
-      self.minimum_step = minimum_step
-      self.max_turns = max_turns
-      self.name = "FunctionOptimisation"
+         self.max_location = self.max_location_list[function]
+         
       #calculated variables
       self.winner = None
       self.result = None
@@ -102,7 +120,8 @@ class FunctionOptimisationState:
       if self.ranges[0][1] - self.ranges[0][0] < self.minimum_step or self.Turn > self.max_turns:
          self.isGameOver = True
          p = self.function(self.eval_point())
-         self.result = bernoulli.rvs(p)
+         if self.for_test: self.result = p #for finding the actual max
+         else: self.result = bernoulli.rvs(p)
          return
       
       #Turn end routine

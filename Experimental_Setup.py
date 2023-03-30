@@ -1,5 +1,11 @@
 from Carcassonne_Game.Carcassonne import CarcassonneState
 from TicTacToe_Game.TicTacToe import TicTacToeState #mod
+from Function_Optimisation_Game.Function_Optimisation import FunctionOptimisationState
+from player.Player import RandomPlayer
+from player.MCTS_Player import MCTSPlayer
+from player.MCTS_RAVE_Player import MCTS_RAVEPlayer
+from player.MCTS_ES_BACK_Player import MCTS_ES_BACK_Player
+from player.MCTS_ES_BACK_SEM_Player import MCTS_ES_BACK_SEM_Player
 
 import os
 import pandas as pd
@@ -842,7 +848,8 @@ def tree_data(player, divisions=3, dimension=0, early_cut=False):
 
    for node in nodes:
       id_list.append(node.id)
-      x_list.append(node.state.eval_point()[dimension])
+      #for d in dimension:
+      x_list.append(node.state.eval_point())#[dimension])
       id_block_list.append(int((node.id/(n_nodes+1))/(1/divisions)))
       features_list.append(node.state.featureVector())
    data_dict = {"player":player.name,"id":id_list, "x":x_list, "id_block":id_block_list}
@@ -923,7 +930,69 @@ def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", 
     
     final_df.to_csv(logs_path + join + output_name, index=False)
 
+def get_subset(data, agent_name, f_index, c_param=None): #fo get susbset from data 
+   """
+    Ex:
+    dummy_state = FunctionOptimisationState(players=[None], function=0, ranges=[[0,1]], splits=2)
+    functions = dummy_state.function_list
+    join = "/"
+    logs_path = "logs/Old/FO"
+    output_name = "collective_tree_logs.csv"
+    data = pd.read_csv(logs_path + join + "collective_tree_logs.csv")
+    n_buckets = 400
+    f_max_locations = [0.5,0.867,None,0.1,0.1]
+    for f_index in [0]:#,1,2,3,4]:
+        agents_names = data["player"].unique()
+        #print(agents_names)
+        c_params = data["c_param"].unique()
+        c_params.sort()
+        generic_name = "MCTS_c"
+        agents_names = [x for x in agents_names]
+        names = []
+        data_list = []
 
+        #order names
+        for c in c_params:
+            string_c = str(c)
+            if string_c.split(".")[-1] == "0":
+                string_c = string_c[:-2]
+            names.append(generic_name + string_c)
+        for name in agents_names:
+            if "SE_MCTS" in name:
+                names.append(name)
+        for name in names:
+            temp_data = get_subset(data, name, f_index)
+            data_list.append(temp_data)
+        
+        treated_names = []
+        temp_names = [x for x in names]
+        for it,st in enumerate(temp_names):
+            new_string = st.replace("_c"," C = ")
+            new_string = new_string.replace("1.414","sqrt(2)fred")
+            new_string = new_string.split("fred")[0]
+            if "SE_MCTS" in new_string:
+                if "2600" in new_string:
+                    new_string = "SE_MCTS partial simulations"
+                    #continue
+                else:
+                    new_string = "SIEA_MCTS complete simulations"
+            treated_names.append(new_string)
+
+        for i,df in enumerate(data_list):
+            df['player'] = df['player'].replace([names[i]],treated_names[i])
+
+        for i,name in enumerate(treated_names):
+            if name == "SE_MCTS partial simulations":
+                del data_list[i]
+        plot = exps.show_search_depth(data_list, "Average expansion depth by iteration. Function " + str(f_index+1), 30, 10)
+   """
+   
+   temp_data = data.loc[data["f_index"]==f_index]
+   if c_param is not None:
+      temp_data = temp_data.loc[temp_data["c_param"]==c_param]
+   #print(temp_data["player"].unique())
+   temp_data = temp_data.loc[temp_data["player"] == agent_name]
+   return temp_data
 
 #### Graph generation
 
@@ -1563,7 +1632,7 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
                         'line': {'color': "#B10909",'width': 1.5, "dash":"dash"}}, row="all", col=1)
    return fig
 
-def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, print_logs=False):
+def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, print_logs=False): #being improved at development hub
    """Returns a figure with a 2d histogram plotting the function landscape as MCTS will se it. Manual (Fast)
     Usage example:
     random_player = RandomPlayer()
@@ -1769,3 +1838,38 @@ def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, pr
    return fig
 
 #### Expeeriments
+
+def fo_find_max(state, suggested_ranges=None, logs=True): #To find max values for each fo functoin
+    """
+    #Experiment sample:
+    f_list=[]
+    max_x=[]
+    values=[]
+    suggested_ranges = {1:[[0.5,1]], 3:[[0,0.5]], 4:[[0,0.5]], 6:[[0.5,1],[0.5,1]], 8:[[0,0.5],[0,0.5]], 9:[[0,0.25],[0,0.25]]}
+    for f in [1,3,4]:
+        state = FunctionOptimisationState(players=[None], function=f,ranges=[[0,1]], splits=2)
+        final_state = find_max(state, suggested_ranges=suggested_ranges[f])
+        max_x.append(final_state.eval_point())
+        values.append(final_state.result)
+        f_list.append(f)
+    for f in [6,8,9]:
+        state = FunctionOptimisationState(players=[None], function=f,ranges=[[0,1],[0,1]], splits=2)
+        final_state = find_max(state, suggested_ranges=suggested_ranges[f])
+        max_x.append(final_state.eval_point())
+        values.append(final_state.result)
+        f_list.append(f)
+    max_data = pd.DataFrame({"max_eval_point":max_x, "value":values, "f_index":f_list})
+    max_data.to_csv("Max_values_exp.csv",index=False)
+    """
+    if not state.for_test: state.for_test = True
+    if suggested_ranges is not None: state.ranges = suggested_ranges
+    mcts_player = MCTSPlayer(iterations=20000
+                                        ,c_param = math.sqrt(2)
+                                        ,rollouts = 1
+                                        ,logs=False)
+    while not state.isGameOver:
+        action = mcts_player.chooseAction(state)
+        state.move(action)
+        if logs: print("Turn:", state.Turn, " x:", state.eval_point(), " f(x):", state.result)
+    return state
+
