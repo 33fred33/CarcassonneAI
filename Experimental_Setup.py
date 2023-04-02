@@ -854,9 +854,11 @@ def tree_data(player, divisions=3, dimension=0, early_cut=False):
       features_list.append(node.state.featureVector())
    data_dict = {"player":player.name,"id":id_list, "x":x_list, "id_block":id_block_list}
 
-   for feature_index in range(len(features_list[0])): #Assumes the feature vector size is constant
-      data_dict["feature_"+str(feature_index)] = [fv[feature_index] for fv in features_list]
-
+   for feature_index, feature_name in enumerate(features_list[0].keys()):
+       data_dict["feature_"+str(feature_index)] = [fv[feature_name] for fv in features_list]
+   #for feature_index in range(len(features_list[0])): #Assumes the feature vector size is constant
+   #   data_dict["feature_"+str(feature_index)] = [fv[feature_index] for fv in features_list]
+    
    data = pd.DataFrame(data_dict)
    return data
 
@@ -1837,7 +1839,7 @@ def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, pr
 
    return fig
 
-#### Expeeriments
+#### Experiments
 
 def fo_find_max(state, suggested_ranges=None, logs=True): #To find max values for each fo functoin
     """
@@ -1873,3 +1875,165 @@ def fo_find_max(state, suggested_ranges=None, logs=True): #To find max values fo
         if logs: print("Turn:", state.Turn, " x:", state.eval_point(), " f(x):", state.result)
     return state
 
+def fo_experiment(func_index,
+                  random_seed,
+                  experiment_type="1p",
+                  player_dicts = [{"type":"VMCTS"}],
+                  runs = 30,
+                  splits = 2,
+                  ranges = [[0,1]],
+                  minimum_step=0.00001,
+                  #Logs data
+                  log_path = ["logs","FO","Default_folder"],
+                  logs_divisions=3,
+                  tree_data=True,
+                  ):
+   """
+   experiment_type can be 1p or 2p
+   player_dicts is a list of dictionaries. Each dictionary must contain the key "type" with a value. The value can only be: "VMCTS","SIEAMCTS or "RANDOM"
+   """
+
+
+   #Setup
+   logfile=os.path.join(*log_path)
+   if not os.path.exists(logfile):
+      os.makedirs(logfile)
+   random.seed(random_seed)
+   np.random.seed(seed=random_seed)
+
+   #Players
+   players={}
+   for player_dict_index in range(len(player_dicts)):
+
+      if player_dicts[player_dict_index]["type"] == "VMCTS":
+         default_player_dict = { "iterations":5000,
+                                    "c":math.sqrt(2),
+                                    "name":"Vanilla_MCTS",
+                                    "rollouts":1,
+                                    "logs":True,
+                                  }
+         default_player_dict.update(player_dicts[player_dict_index])
+         player_dicts[player_dict_index] = default_player_dict
+
+         players[player_dict_index] = MCTSPlayer(iterations=default_player_dict["iterations"]
+                                 ,c_param = default_player_dict["c"]
+                                 ,name= default_player_dict["name"]
+                                 ,rollouts = default_player_dict["rollouts"]
+                                 ,logs=default_player_dict["logs"]
+                                 ,logfile=logfile)
+
+
+      elif player_dicts[player_dict_index]["type"] == "SIEAMCTS":
+         default_player_dict = {"iterations":5000,
+                                    "name":"SIEA_MCTS",
+                                    "rollouts":1,
+                                    "lambda" : 4,
+                                    "generations" : 20,
+                                    "es_sims" : 30,
+                                    "seml" : 0.1,
+                                    "semu" : 0.5,
+                                    "estype" : "comma",
+                                    "c":math.sqrt(2),
+                                    "logs":True,
+                                  }
+         default_player_dict.update(player_dicts[player_dict_index])
+         player_dicts[player_dict_index] = default_player_dict
+
+         players[player_dict_index] = MCTS_ES_BACK_SEM_Player(iterations=default_player_dict["iterations"]
+                              ,c_param=default_player_dict["c"]
+                              ,rollouts = default_player_dict["rollouts"]
+                              ,name=default_player_dict["name"]
+                              ,Lambda=default_player_dict["lambda"]
+                              ,NGen=default_player_dict["generations"]
+                              ,ES_Sims=default_player_dict["es_sims"]
+                              ,ESType=default_player_dict["estype"]
+                              ,logs=default_player_dict["logs"]
+                              ,logfile=logfile
+                              ,Sem_L=default_player_dict["seml"]
+                              ,Sem_U=default_player_dict["semu"])
+         
+      elif player_dicts[player_dict_index]["type"] == "EAMCTS":
+         default_player_dict = {"iterations":5000,
+                                    "name":"EA_MCTS",
+                                    "rollouts":1,
+                                    "lambda" : 4,
+                                    "generations" : 20,
+                                    "es_sims" : 30,
+                                    "estype" : "comma",
+                                    "c":math.sqrt(2),
+                                    "logs":True,
+                                  }
+         default_player_dict.update(player_dicts[player_dict_index])
+         player_dicts[player_dict_index] = default_player_dict
+
+         players[player_dict_index] = MCTS_ES_BACK_SEM_Player(iterations=default_player_dict["iterations"]
+                              ,c_param=default_player_dict["c"]
+                              ,rollouts = default_player_dict["rollouts"]
+                              ,name=default_player_dict["name"]
+                              ,Lambda=default_player_dict["lambda"]
+                              ,NGen=default_player_dict["generations"]
+                              ,ES_Sims=default_player_dict["es_sims"]
+                              ,ESType=default_player_dict["estype"]
+                              ,logs=default_player_dict["logs"]
+                              ,logfile=logfile)
+
+      elif player_dicts[player_dict_index]["type"] == "RANDOM":
+         players[player_dict_index] = RandomPlayer()
+
+      else: print("Wrong player type")
+
+   #Problem
+   state = FunctionOptimisationState(players=players, function=func_index, ranges=ranges, splits=splits, minimum_step=minimum_step)# give any single player
+   used_func = state.function
+
+   #Execution
+   if experiment_type == "1p":
+      all_data = []
+      all_fo_logs = pd.DataFrame()
+      for p_id, player in players.items():
+         fo_logs, data = multiple_runs(state, used_func, player, runs, random_seed, logs_divisions)
+         all_fo_logs = pd.concat([all_fo_logs,fo_logs])
+         all_data.append(data)
+         all_data_df = pd.concat(all_data)
+         all_data_df.to_csv(os.path.join("logs", logfile, "Tree_data.csv"), index=False)
+
+      #Create final logs
+      #Combine separate logs
+      CombineFiles(logs=True,logfile=logfile)
+
+      #Results logs
+      player_logs = defaultdict(lambda:[])
+      for player_idx, player in players.items():
+         temp_logs = all_fo_logs[all_fo_logs["Player"]==player.name]
+         player_logs["Player"].append(player.name)
+         player_logs["Mean_Tree_Nodes"].append(temp_logs["Tree_Nodes"].mean())
+         player_logs["Std_Tree_Nodes"].append(temp_logs["Tree_Nodes"].std())
+         player_logs["Mean_Terminals_Reached"].append(temp_logs["Terminals_Reached"].mean())
+         player_logs["Std_Terminals_Reached"].append(temp_logs["Terminals_Reached"].std())
+         player_logs["Mean_Max_Visits_Path"].append(temp_logs["Max_Visits_Path"].mean())
+         player_logs["Std_Max_Visits_Path"].append(temp_logs["Max_Visits_Path"].std())
+         player_logs["Mean_Max_Reward_Path"].append(temp_logs["Max_Reward_Path"].mean())
+         player_logs["Std_Max_Reward_Path"].append(temp_logs["Max_Reward_Path"].std())
+         player_logs["Tree_Reaches_Terminal"].append(temp_logs["Max_Reward_Path"].values.sum()/len(temp_logs))
+
+      player_df = pd.DataFrame(player_logs)
+      player_df.to_csv(os.path.join("logs", logfile, "Final_Player_logs" + '.csv'), index=False)
+      all_fo_logs.to_csv(os.path.join("logs", logfile, "Player_logs" + '.csv'), index=False)
+   
+   #Parameters logs
+   final_logs={}
+   final_logs["experiment_type"]=experiment_type
+   final_logs["runs"]=runs
+   final_logs["random_seed"]=random_seed
+   final_logs["logfile"]=logfile
+   #Problem parameters
+   final_logs["branching_factor"]=splits
+   final_logs["func_index"]=func_index
+   final_logs["ranges"]=ranges
+   #Player parameters
+   for p_index,playeri in players.items():
+      for k,v in player_dicts[p_index].items():
+         final_logs["Player_" + str(p_index) + "_" + k] = v
+
+   final_df = pd.DataFrame(final_logs)
+   final_df.to_csv(os.path.join("logs", logfile, "Parameter_logs" + '.csv'), index=False)

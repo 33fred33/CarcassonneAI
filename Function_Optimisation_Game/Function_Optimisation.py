@@ -162,10 +162,14 @@ class FunctionOptimisationState:
     
    def featureVector(self):
       """Features: turn, player turn, ranges0, ranges1"""
-      return [self.Turn, self.playerSymbol, self.ranges[0][0], self.ranges[0][1]]
+      features = {"Turn":self.Turn, "Player_symbol":self.playerSymbol}
+      for d in range(len(self.ranges)):
+         features["dimension"+str(d) + "_start"] = self.ranges[d][0]
+         features["dimension"+str(d) + "_end"] = self.ranges[d][1]
+      return features
 
    def __repr__(self):
-      return str(self.ranges)
+      return str(self.featureVector())
 
 class AvailableMove:
    """
