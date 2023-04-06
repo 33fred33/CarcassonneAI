@@ -880,7 +880,7 @@ def best_tree_path(node, recommendation_policy="reward"):
 def multiple_runs(state, function, player, runs, random_seed, divisions, dimension=0, division_method = "percentage", early_cut=False):
    random.seed(random_seed)
    random_seed_sequence = [random.randint(0,1000000) for _ in range(runs)]
-   collective_data = []
+   collective_tree_data = []
    fo_logs = defaultdict(lambda:[])
    for run in range(runs):
       temp_player=player.ClonePlayer()
@@ -889,7 +889,7 @@ def multiple_runs(state, function, player, runs, random_seed, divisions, dimensi
       temp_player.chooseAction(state)
       data = tree_data(temp_player, divisions, dimension, early_cut)
       data.insert(0,"run",[run for _ in range(len(data))])
-      collective_data.append(data)
+      collective_tree_data.append(data)
       trt = False
       terminal_count = sum([1 for k,n in temp_player.nodes_dict.items() if n.untried_moves==[] and n.child ==[]])
       if terminal_count >= 1:
@@ -901,9 +901,9 @@ def multiple_runs(state, function, player, runs, random_seed, divisions, dimensi
       fo_logs["Tree_Reaches_Terminal"].append(trt)
       fo_logs["Terminals_Reached"].append(terminal_count)
       fo_logs["Random_Seed"].append(random_seed_sequence[run])
-   df_data = pd.concat(collective_data)
+   tree_data = pd.concat(collective_tree_data)
    fo_logs = pd.DataFrame(fo_logs)
-   return fo_logs, df_data
+   return fo_logs, tree_data
 
 def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", exp_names=None):
     """
@@ -989,7 +989,7 @@ def get_subset(data, agent_name, f_index, c_param=None): #fo get susbset from da
         plot = exps.show_search_depth(data_list, "Average expansion depth by iteration. Function " + str(f_index+1), 30, 10)
    """
    
-   temp_data = data.loc[data["f_index"]==f_index]
+   temp_data = data.loc[data["function"]==f_index]
    if c_param is not None:
       temp_data = temp_data.loc[temp_data["c_param"]==c_param]
    #print(temp_data["player"].unique())
