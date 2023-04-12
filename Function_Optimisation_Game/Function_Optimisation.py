@@ -76,7 +76,7 @@ class FunctionOptimisationState:
             """Deceptive, search traps"""
             return f3([x[0]])*f1([x[1]])
          self.function_list=[f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]
-         self.max_location_list = [[[0.5]],[[0.867]],[[None]],[[0.1]],[[0.1]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]],[[0.5,0.5]]]
+         self.max_location_list = [[0.5],[0.86832],[None],[0.1],[0.1],[0.5,0.5],[0.866,0.866],[None,None],[0.1,0.1],[0.1,0.1]]
          assert (self.dimensions==1 and self.function_index in [0,1,2,3,4]) or (self.dimensions==2 and self.function_index in [5,6,7,8,9])
 
          #assignation

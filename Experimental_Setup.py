@@ -905,32 +905,65 @@ def multiple_runs(state, function, player, runs, random_seed, divisions, dimensi
    fo_logs = pd.DataFrame(fo_logs)
    return fo_logs, tree_data
 
-def Collect_FO_logs(logs_path = "logs/FO", output_name = "collective_logs.csv", exp_names=None):
+def Collect_FO_logs(logs_path, output_name = "collective_logs.csv", exp_names=None, include_tree_logs = True,  output_tree_name = "collective_tree_logs.csv"):
     """
+    1 player
     Collects data in "collective_tree_logs.csv".
     Logs names should be saved as "logs_path/Results_f0_c0.5" where f is the function, c is the parameter
     Logs in that folder should contain "Final_Player_logs.csv" and "Parameter_logs.csv"
+    Example:
+    exp_names_filtered = []
+    for name in exp_names:
+        for distinctive in ["_f5_","_f6_","_f7_","_f8_","_f9_"]:
+            if distinctive in name:
+                exp_names_filtered.append(name)
+                break
+    Collect_FO_logs(exp_names=exp_names_filtered, output_name = "2d_collective_logs.csv", output_tree_name = "2d_collective_tree_logs.csv")
     """
         
     if exp_names is None:
         exp_names = [ item for item in os.listdir(logs_path) if os.path.isdir(os.path.join(logs_path, item)) ]
-    join = "/"
+        
+    all_data = []
+    all_tree_data = []
     final_df = pd.DataFrame()
+    final_tree_df = pd.DataFrame()
     for i,exp_name in enumerate(exp_names):
-        data = pd.read_csv(logs_path + join + exp_name + join + "Final_Player_logs.csv")
-        pars = pd.read_csv(logs_path + join + exp_name + join + "Parameter_logs.csv")
-        fi_list = [pars["func_index"][0] for _ in range(len(data))]
-        c_list = [pars["c_param"][0] for _ in range(len(data))]
-        expname_list = [exp_name for _ in range(len(data))]
-        data["function"] = fi_list
-        data["c"] = c_list
-        data["expname"] = expname_list
-        if i==0:
-            final_df = pd.DataFrame(data)
+        data = pd.read_csv(os.path.join(logs_path, exp_name, "Final_Player_logs.csv"))
+        pars = pd.read_csv(os.path.join(logs_path, exp_name, "Parameter_logs.csv"))
+        tree_data = pd.read_csv(os.path.join(logs_path, exp_name, "Tree_data.csv"))
+
+        if "Player_0_name" in pars.columns:
+            player_name = pars["Player_0_name"][0]
         else:
-            final_df = pd.concat([final_df,data]) 
+            player_name = exp_name.split("_f")[0]
+        if "func_index" in pars.columns:
+            func_index = pars["func_index"][0]
+        else:
+            func_index = exp_name.split("_f")[1].split("_")[0]
+        if "Player_0_c" in pars.columns or "c_param" in pars.columns:
+            if "Player_0_c" in pars.columns: c_param = pars["Player_0_c"][0]
+            else: c_param = pars[pars["c_param"]]
     
-    final_df.to_csv(logs_path + join + output_name, index=False)
+        data["Player"] = [player_name for _ in range(len(data))]
+        data["function"] = [func_index for _ in range(len(data))]
+        data["c"] = [c_param for _ in range(len(data))]
+        data["expname"] = [exp_name for _ in range(len(data))]
+        data["Params"] = [pars.to_dict() for _ in range(len(data))]
+        all_data.append(data)
+
+        tree_data["Player"] = [player_name for _ in range(len(tree_data))]
+        tree_data["function"] = [func_index for _ in range(len(tree_data))]
+        tree_data["c"] = [c_param for _ in range(len(tree_data))]
+        tree_data["expname"] = [exp_name for _ in range(len(tree_data))]
+        tree_data["Params"] = [pars.to_dict() for _ in range(len(tree_data))]
+        all_tree_data.append(tree_data)
+  
+    final_df = pd.concat(all_data)
+    final_df.to_csv(os.path.join(logs_path, output_name), index=False)
+
+    final_tree_df = pd.concat(all_tree_data)
+    final_tree_df.to_csv(os.path.join(logs_path, output_tree_name), index=False)
 
 def get_subset(data, agent_name, f_index, c_param=None): #fo get susbset from data 
    """
@@ -1523,7 +1556,7 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
     fig.show()
    """
 
-    #Initialize
+   #Initialize
    stop = fo_state.ranges[0][1]
    start = fo_state.ranges[0][0]
 
@@ -1561,42 +1594,84 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
    n_plots = max_depth
    even_spaces = 1/(n_plots+1)
    row_heights = [even_spaces for _ in range(n_plots)] + [even_spaces]
-   sub_titles = ["Function "+ str(fo_state.function_index)] + ["Tree depth " + str(i+1) for i in range(max_depth)]
-   fig = make_subplots(rows=n_plots+1, cols=1,shared_xaxes=True,vertical_spacing=0.03,row_heights=row_heights, specs=[[{"secondary_y": True}] for _ in range(n_plots+1)], subplot_titles=sub_titles)
+   sub_titles = [""] + ["Tree depth " + str(i+1) for i in range(max_depth)]
+   fig = make_subplots(rows=n_plots+1, 
+                       cols=1,
+                       shared_xaxes=True,
+                       vertical_spacing=0.04,
+                       row_heights=row_heights, 
+                       specs=[[{"secondary_y": True}] for _ in range(n_plots+1)], 
+                       subplot_titles=sub_titles)
    
    #add function plot
    x = np.linspace(0.001,1,5000)
    y = [fo_state.function([i]) for i in x]
-   fig.add_trace(go.Scatter(x=x, y=y, showlegend=False,marker={"color":"black"}),row=1,col=1)
-   
+   fig.add_trace(go.Scatter(x=x, 
+                            y=y, 
+                            showlegend=False,
+                            marker={"color":"black"}),
+                  row=1,col=1)
+   if max_val is not None:
+         fig.add_trace(go.Scatter(x=[max_val,max_val], 
+                                  y=[0,1], 
+                                  line=dict(color="#B10909", width=2, dash='dash'),
+                                  showlegend=True,
+                                  marker={"color":"#B10909"},
+                                  name="Localisation of the global maximum of the function"),
+                        row=1,col=1)
 
    #add analysis plots
    for d in range(1,max_depth+1):
+      show_legend = False
+      if d == max_depth:
+         show_legend = True
       widths = bar_widths[d-1]
       x = np.linspace(start,stop,((fo_state.splits**(d))*2)+1)
       x = [x[i] for i in range(1,len(x)) if i%2]
-      #print(x)
       x=np.cumsum(widths)-widths
-      #print(x)
       valid_keys = [k for k in values_by_depth.keys() if k[0] == d]
       y = [values_by_depth[k] for k in valid_keys]
 
       #Find max and change color
       max_y=max(y)
       colors = ["#5B8C5A" for _ in range(len(y))]
+      textures = ["" for _ in range(len(y))]
+      legend_groups = ["any" for _ in range(len(y))]
       for i, y_i in enumerate(y):
          if abs(max_y-y_i) < 0.0001:
             colors[i] = "#56638A"
+            textures[i] = "x"
+            legend_groups[i] = "max"
 
       fig.add_trace(go.Bar(x=x
                            , y=y
-                           , showlegend=False
+                           , showlegend=show_legend
                            ,marker_color=colors
                            ,width=widths
                            ,offset=0
+                           ,marker_pattern_shape=textures
+                           ,name="Initial belief value for each node"
+                           ,marker= dict(pattern = dict(solidity=0.4))
+                           ,legendrank=1002
                            )
                         ,row=d+1,col=1)
-      fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color="#56638A", width=2, dash='dash'),showlegend=False,marker={"color":"#56638A"}),row=d+1,col=1)
+      fig.add_trace(go.Bar(x=x
+                           , y=[0 for _ in range(len(y))]
+                           , showlegend=show_legend
+                           ,marker_color="#56638A"
+                           ,width=widths
+                           ,offset=0
+                           ,marker_pattern_shape="x"
+                           ,name="Maximum initial belief value at this depth"
+                           ,legendrank=1001
+                           ,marker= dict(pattern = dict(solidity=0.4))
+                           )
+                        ,row=d+1,col=1)
+      #fig.update_traces(marker_pattern_shape=textures)
+      fig.add_trace(go.Scatter(x=[start,stop], y=[max(y),max(y)], line=dict(color="#56638A", width=2, dash='dash'),showlegend=show_legend,marker={"color":"#56638A"},
+                               name="Comparison of the maximum initial belief value available at this depth"),row=d+1,col=1)
+      if max_val is not None:
+         fig.add_trace(go.Scatter(x=[max_val,max_val], y=[0,1], line=dict(color="#B10909", width=2, dash='dash'),showlegend=False,marker={"color":"#B10909"}),row=d+1,col=1)
 
       #add vertical lines
       if d > 1:
@@ -1608,12 +1683,17 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
 
    #update fig layout
    fig.update_layout(barmode='stack')
-   fig.update_layout(margin=dict(l=10, r=10, t=35, b=20),width=800,height=800,plot_bgcolor='rgba(0,0,0,0)',title={"text": title},font = dict(family = "Arial", size = 14, color = "black")
+   fig.update_layout(margin=dict(l=10, r=10, t=10, b=10),
+                     width=800,
+                     height=800,
+                     plot_bgcolor='rgba(0,0,0,0)',
+                     title={"text": title},
+                     font = dict(family = "Arial", size = 14, color = "black")
                 ,legend=dict(
                     #title = "Formula",
-                    #orientation="h",
-                    #yanchor="top",
-                    y=-0.65,
+                    orientation="h",
+                    yanchor="top",
+                    y=-0.03,
                     xanchor="center",
                     x=0.5,  
                     font = dict(family = "Arial", size = 14, color = "black"),
@@ -1628,10 +1708,14 @@ def fo_function_analysis(fo_state, title, max_depth=3, max_val=None):
    # fig.update_xaxes(range=[start,stop])
    fig.update_xaxes(range=[0,1])
    fig.update_yaxes(range=[0,1])
-   if max_val is not None:
+   if max_val is not None and False:
+         print(max_val)
          fig.add_shape({'type': 'line','y0':0,'y1': 1,'x0':max_val, 
                         'x1':max_val,
-                        'line': {'color': "#B10909",'width': 1.5, "dash":"dash"}}, row="all", col=1)
+                        'line': {'color': "#B10909",
+                                 'width': 1.5, 
+                                 "dash":"dash",
+                                 }}, row="all", col=1)
    return fig
 
 def fo_function_analysis_2d(fo_state, max_depth=3, minimum_step_limit = None, print_logs=False): #being improved at development hub
